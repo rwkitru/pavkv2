@@ -9,10 +9,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f4f7fa; margin: 0; overflow: hidden; height: 100vh; height: -webkit-fill-available; }
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7fa; margin: 0; overflow: hidden; height: 100vh; height: -webkit-fill-available; transition: background 0.3s ease; }
         html { height: -webkit-fill-available; }
         
-        .sidebar { width: 350px; min-width: 350px; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; background: #fff; height: 100vh; transition: transform 0.3s ease; }
+        .sidebar { width: 350px; min-width: 350px; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; background: #fff; height: 100vh; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .main-content { flex: 1; display: flex; flex-direction: column; background: #f0f2f5; height: 100vh; height: -webkit-fill-available; position: relative; width: 100%; overflow: hidden; }
         
         @media (max-width: 768px) {
@@ -21,44 +21,55 @@
             .main-content { width: 100vw; height: 100%; }
         }
 
-        .chat-item { transition: all 0.2s; cursor: pointer; border-radius: 12px; margin: 4px 8px; padding: 12px; display: flex; align-items: center; gap: 12px; }
-        .chat-item:hover { background: #f8fafc; }
+        .chat-item { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border-radius: 12px; margin: 4px 8px; padding: 12px; display: flex; align-items: center; gap: 12px; }
+        .chat-item:hover { background: #f1f5f9; transform: translateX(4px); }
+        .chat-item:active { transform: scale(0.98); }
         .chat-item.active { background: #eff6ff; }
-        .avatar { width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
         
-        .message-bubble { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); align-self: flex-start; }
-        .message-bubble.mine { background: #3b82f6; color: white; border-bottom-left-radius: 18px; border-bottom-right-radius: 4px; align-self: flex-end; }
+        .avatar { width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; transition: transform 0.3s ease; }
+        .chat-item:hover .avatar { transform: scale(1.05); }
         
-        #messagesArea { scroll-behavior: smooth; background: #e5ddd5; background-image: radial-gradient(#d1d1d1 1px, transparent 0); background-size: 20px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; }
+        .message-bubble { position: relative; max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); align-self: flex-start; animation: slideIn 0.3s ease-out; }
+        .message-bubble.mine { background: #3b82f6; color: white; border-bottom-left-radius: 18px; border-bottom-right-radius: 4px; align-self: flex-end; animation: slideInRight 0.3s ease-out; }
         
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); padding: 20px; }
-        .custom-alert { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; width: auto; max-width: 90vw; text-align: center; }
+        .views-badge { display: flex; align-items: center; gap: 3px; font-size: 10px; color: #94a3b8; margin-top: 4px; }
+        .mine .views-badge { color: #bfdbfe; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+        #messagesArea { scroll-behavior: smooth; background: #e5ddd5; background-image: radial-gradient(#d1d1d1 0.5px, transparent 0); background-size: 20px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; transition: all 0.3s ease; }
         
-        #searchContainer { display: flex; align-items: center; background: #f1f5f9; border-radius: 10px; width: 40px; height: 40px; overflow: hidden; transition: width 0.3s; cursor: pointer; }
-        #searchContainer.expanded { width: 220px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(8px); padding: 20px; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        #searchContainer { display: flex; align-items: center; background: #f1f5f9; border-radius: 10px; width: 40px; height: 40px; overflow: hidden; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        #searchContainer.expanded { width: 220px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         #searchInput { width: 0; opacity: 0; background: transparent; border: none; outline: none; padding-left: 8px; font-size: 14px; transition: width 0.3s, opacity 0.2s; }
         #searchContainer.expanded #searchInput { width: 180px; opacity: 1; }
 
-        input { font-size: 16px !important; }
-        #chatFooter { flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 12px); min-height: 70px; }
+        .btn-animate { transition: all 0.2s ease; }
+        .btn-animate:active { transform: scale(0.9); }
+        
+        #chatFooter { flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 12px); min-height: 70px; transition: height 0.3s ease; }
     </style>
 </head>
 <body class="flex">
 
     <!-- Экран авторизации -->
-    <div id="authScreen" class="fixed inset-0 bg-[#f4f7fa] z-[200] flex items-center justify-center p-4">
-        <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl w-full max-w-md">
+    <div id="authScreen" class="fixed inset-0 bg-[#f4f7fa] z-[200] flex items-center justify-center p-4 transition-opacity duration-500">
+        <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl w-full max-w-md transform transition-all duration-500 scale-100">
             <h1 class="text-2xl font-bold text-center mb-2" id="authTitle">Регистрация</h1>
             <p class="text-gray-400 text-center mb-8 text-sm" id="authSubtitle">Создайте аккаунт pnavkv2</p>
             <div class="space-y-4">
-                <input type="text" id="authUsername" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="Никнейм (4-12 симв)">
-                <input type="password" id="authPassword" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="Пароль">
-                <button onclick="handleAuth()" id="mainAuthBtn" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all active:scale-95">
+                <input type="text" id="authUsername" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none transition-all focus:border-blue-400 focus:bg-white" placeholder="Никнейм (4-12 симв)">
+                <input type="password" id="authPassword" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none transition-all focus:border-blue-400 focus:bg-white" placeholder="Пароль">
+                <button onclick="handleAuth()" id="mainAuthBtn" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all btn-animate">
                     <span id="authBtnText">Зарегистрироваться</span>
                 </button>
             </div>
             <div class="mt-6 text-center">
-                <button onclick="toggleAuthMode()" id="toggleAuthBtn" class="text-blue-600 font-semibold text-sm">Уже есть аккаунт? Войти</button>
+                <button onclick="toggleAuthMode()" id="toggleAuthBtn" class="text-blue-600 font-semibold text-sm hover:underline">Уже есть аккаунт? Войти</button>
             </div>
         </div>
     </div>
@@ -70,35 +81,35 @@
             <div class="flex gap-2">
                 <div id="searchContainer" onclick="this.classList.add('expanded'); document.getElementById('searchInput').focus();">
                     <div class="p-2 text-gray-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2.5"></path></svg></div>
-                    <input type="text" id="searchInput" placeholder="Поиск людей и каналов..." oninput="renderChatList()">
+                    <input type="text" id="searchInput" placeholder="Поиск людей..." oninput="renderChatList()">
                 </div>
-                <button onclick="openCreateModal()" class="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-xl shadow-md active:scale-90 transition-transform"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2.5"></path></svg></button>
+                <button onclick="openCreateModal()" class="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-xl shadow-md btn-animate"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2.5"></path></svg></button>
             </div>
         </div>
-        <div id="chatListArea" class="flex-1 overflow-y-auto"></div>
+        <div id="chatListArea" class="flex-1 overflow-y-auto space-y-1"></div>
         <div class="p-4 border-t bg-gray-50 flex items-center justify-between">
             <span id="myUsername" class="font-bold text-sm text-gray-500 truncate max-w-[150px]">@user</span>
-            <button onclick="logout()" class="text-xs text-red-500 font-bold">Выйти</button>
+            <button onclick="logout()" class="text-xs text-red-500 font-bold hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors">Выйти</button>
         </div>
     </aside>
 
     <!-- Основной контент -->
     <main class="main-content" id="chatView" style="display:none;">
-        <div id="noChannelView" class="flex-1 flex flex-col items-center justify-center text-gray-400 px-6 text-center">
+        <div id="noChannelView" class="flex-1 flex flex-col items-center justify-center text-gray-400 px-6 text-center animate-pulse">
             <div class="bg-white p-6 rounded-full mb-4 shadow-sm">
                 <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
             </div>
-            <p>Выберите чат или найдите человека через поиск, чтобы начать общение</p>
+            <p>Выберите чат или найдите человека через поиск</p>
         </div>
 
-        <div id="activeChannelContent" class="hidden flex-1 flex flex-col h-full overflow-hidden">
+        <div id="activeChannelContent" class="hidden flex-1 flex flex-col h-full overflow-hidden transition-opacity duration-300">
             <header class="bg-white px-3 py-2 md:px-4 border-b flex items-center justify-between shadow-sm z-10 flex-shrink-0">
                 <div class="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
-                    <button onclick="goBack()" class="md:hidden p-2 text-gray-500 active:bg-gray-100 rounded-full">
+                    <button onclick="goBack()" class="md:hidden p-2 text-gray-500 btn-animate rounded-full">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-width="2.5"></path></svg>
                     </button>
-                    <div class="flex items-center gap-2 cursor-pointer overflow-hidden" onclick="openChannelProfile()">
-                        <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">?</div>
+                    <div class="flex items-center gap-2 cursor-pointer overflow-hidden transition-opacity hover:opacity-80" onclick="openChannelProfile()">
+                        <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 transition-transform">?</div>
                         <div class="min-w-0">
                             <h3 id="headerTitle" class="font-bold text-gray-800 leading-tight truncate text-sm md:text-base">Имя</h3>
                             <p id="headerMeta" class="text-[10px] md:text-xs text-blue-500 truncate">инфо</p>
@@ -106,8 +117,8 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button id="leaveChannelBtn" onclick="leaveCurrentChannel()" class="hidden text-[10px] md:text-xs bg-red-50 px-3 py-1.5 rounded-lg font-bold text-red-500 active:bg-red-100">Выйти</button>
-                    <button id="editChannelBtn" onclick="openEditModal()" class="hidden text-[10px] md:text-xs bg-gray-100 px-3 py-1.5 rounded-lg font-bold text-gray-600 active:bg-gray-200">Ред.</button>
+                    <button id="leaveChannelBtn" onclick="leaveCurrentChannel()" class="hidden text-[10px] md:text-xs bg-red-50 px-3 py-1.5 rounded-lg font-bold text-red-500 active:bg-red-100 transition-colors">Выйти</button>
+                    <button id="editChannelBtn" onclick="openEditModal()" class="hidden text-[10px] md:text-xs bg-gray-100 px-3 py-1.5 rounded-lg font-bold text-gray-600 active:bg-gray-200 transition-colors">Ред.</button>
                 </div>
             </header>
             
@@ -115,14 +126,14 @@
             
             <footer id="chatFooter" class="bg-white p-3 border-t">
                 <div id="messageControls" class="flex items-center gap-2">
-                    <input type="text" id="msgInput" placeholder="Напишите сообщение..." class="flex-1 bg-gray-100 p-3 rounded-2xl outline-none text-sm border border-transparent focus:border-blue-200">
-                    <button onclick="sendMessage()" class="bg-blue-600 text-white p-2.5 rounded-full active:scale-90 transition-transform shadow-sm">
+                    <input type="text" id="msgInput" placeholder="Напишите сообщение..." class="flex-1 bg-gray-100 p-3 rounded-2xl outline-none text-sm border border-transparent focus:border-blue-200 focus:bg-white transition-all">
+                    <button onclick="sendMessage()" class="bg-blue-600 text-white p-2.5 rounded-full btn-animate shadow-sm">
                         <svg class="w-5 h-5 transform rotate-90" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     </button>
                 </div>
                 <div id="subscriberControls" class="hidden flex flex-col items-center justify-center w-full">
-                    <button id="joinBtn" onclick="toggleJoin()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold active:bg-blue-700 transition-colors shadow-sm text-sm">Вступить в канал</button>
-                    <p id="joinedLabel" class="hidden text-gray-400 text-sm font-medium py-2">Вы подписаны на обновления</p>
+                    <button id="joinBtn" onclick="toggleJoin()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold btn-animate shadow-sm text-sm">Вступить в канал</button>
+                    <p id="joinedLabel" class="hidden text-gray-400 text-sm font-medium py-2">Вы подписаны</p>
                 </div>
             </footer>
         </div>
@@ -130,26 +141,26 @@
 
     <!-- Модальные окна -->
     <div id="channelModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) closeChannelModal()">
-        <div class="bg-white p-6 rounded-3xl w-full max-w-[400px]">
+        <div class="bg-white p-6 rounded-3xl w-full max-w-[400px] shadow-2xl transform transition-transform">
             <h2 id="modalTitle" class="text-xl font-bold mb-6">Создать канал</h2>
             <div class="space-y-4">
-                <input type="text" id="channelNameInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none" placeholder="Название канала">
-                <input type="text" id="channelIdInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none" placeholder="Уникальная ссылка (id)">
+                <input type="text" id="channelNameInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400" placeholder="Название канала">
+                <input type="text" id="channelIdInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400" placeholder="Ссылка (id)">
                 <div class="flex gap-3 pt-2">
-                    <button onclick="closeChannelModal()" class="flex-1 py-4 text-gray-500 font-bold active:bg-gray-50 rounded-xl">Отмена</button>
-                    <button onclick="saveChannel()" class="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold active:bg-blue-700">ОК</button>
+                    <button onclick="closeChannelModal()" class="flex-1 py-4 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-colors">Отмена</button>
+                    <button onclick="saveChannel()" class="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold btn-animate">ОК</button>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="profileModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) this.style.display='none'">
-        <div class="bg-white p-8 rounded-3xl w-full max-w-[350px] text-center">
+        <div class="bg-white p-8 rounded-3xl w-full max-w-[350px] text-center shadow-2xl">
             <div id="profAvatar" class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl text-white font-bold">?</div>
             <h2 id="profName" class="text-xl font-bold">Имя</h2>
             <p id="profId" class="text-blue-500 mb-4">@id</p>
             <div id="profMeta" class="text-left border-t pt-4 space-y-2"></div>
-            <button onclick="document.getElementById('profileModal').style.display='none'" class="mt-6 w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold">Закрыть</button>
+            <button onclick="document.getElementById('profileModal').style.display='none'" class="mt-6 w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold btn-animate">Закрыть</button>
         </div>
     </div>
 
@@ -158,7 +169,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs, increment, or, and } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs, or } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBAFGyrgliehm-cfJG91QkQRvUGACPP8rA",
@@ -178,8 +189,9 @@
         let channels = [];
         let allUsers = [];
         let mySubs = [];
-        let activeChat = null; // {id, type: 'channel' | 'direct', targetUser?}
+        let activeChat = null;
         let authMode = 'register';
+        let directChatsWithActivity = [];
 
         const savedUser = localStorage.getItem('pnavkv2_user');
         if (savedUser) loginAs(savedUser);
@@ -200,7 +212,7 @@
             const snap = await getDoc(uRef);
             if (authMode === 'register') {
                 if (snap.exists()) return showToast("Ник занят");
-                await setDoc(uRef, { username: name, password: pass, subs: [], type: 'user' });
+                await setDoc(uRef, { username: name, password: pass, subs: [], type: 'user', last_active: serverTimestamp() });
                 loginAs(name);
             } else {
                 if (!snap.exists() || snap.data().password !== pass) return showToast("Ошибка входа");
@@ -211,23 +223,33 @@
         function loginAs(name) {
             user = name;
             localStorage.setItem('pnavkv2_user', name);
-            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('authScreen').style.opacity = '0';
+            setTimeout(() => document.getElementById('authScreen').style.display = 'none', 500);
+            
             document.getElementById('appSidebar').style.display = 'flex';
             document.getElementById('chatView').style.display = 'flex';
             document.getElementById('myUsername').textContent = '@' + name;
             
-            // Следим за своими подписками
+            onSnapshot(collection(db, ROOT, "direct_chats", "list"), (s) => {
+                directChatsWithActivity = s.docs
+                    .filter(d => d.id.includes(user))
+                    .map(d => {
+                        const parts = d.id.split("_v_");
+                        const other = parts.find(p => p !== user);
+                        return { id: d.id, type: 'direct', username: other };
+                    });
+                renderChatList();
+            });
+
             onSnapshot(doc(db, ROOT, "users", "list", name), (s) => {
                 if(s.exists()) { mySubs = s.data().subs || []; renderChatList(); }
             });
 
-            // Список всех каналов
             onSnapshot(collection(db, ROOT, "channels", "list"), (s) => {
                 channels = s.docs.map(d => ({ id: d.id, ...d.data(), type: 'channel' }));
                 renderChatList();
             });
 
-            // Список всех пользователей (для поиска)
             onSnapshot(collection(db, ROOT, "users", "list"), (s) => {
                 allUsers = s.docs.map(d => ({ id: d.id, ...d.data(), type: 'user' }));
                 renderChatList();
@@ -240,30 +262,29 @@
             list.innerHTML = '';
 
             let items = [];
-
             if (search.length > 0) {
-                // В режиме поиска показываем всё
                 const filteredChannels = channels.filter(c => c.name.toLowerCase().includes(search) || c.link.includes(search));
                 const filteredUsers = allUsers.filter(u => u.username.toLowerCase().includes(search) && u.username !== user);
                 items = [...filteredChannels, ...filteredUsers];
             } else {
-                // Обычный режим: мои каналы + личные переписки (пока упростим до всех пользователей, с кем была активность)
-                // Для MVP: показываем только те каналы, где я админ или подписан
-                items = channels.filter(c => c.owner === user || mySubs.includes(c.id));
+                const myChannels = channels.filter(c => c.owner === user || mySubs.includes(c.id));
+                items = [...myChannels, ...directChatsWithActivity];
             }
 
-            items.forEach(item => {
+            const uniqueItems = Array.from(new Map(items.map(i => [i.id || i.username, i])).values());
+
+            uniqueItems.forEach(item => {
                 const isChannel = item.type === 'channel';
                 const displayName = isChannel ? item.name : `@${item.username}`;
-                const subtext = isChannel ? `@${item.link}` : 'Личное сообщение';
+                const subtext = isChannel ? `@${item.link}` : 'Личная переписка';
                 
                 const div = document.createElement('div');
-                div.className = `chat-item ${activeChat?.id === item.id ? 'active' : ''}`;
+                div.className = `chat-item ${activeChat?.id === (item.id || item.username) ? 'active' : ''}`;
                 div.onclick = () => isChannel ? selectChannel(item.id) : selectUser(item.username);
                 div.innerHTML = `
-                    <div class="avatar" style="background:${getHashColor(displayName)}">${displayName[isChannel?0:1].toUpperCase()}</div>
+                    <div class="avatar shadow-sm" style="background:${getHashColor(displayName)}">${(isChannel ? item.name : item.username)[0].toUpperCase()}</div>
                     <div class="flex-1 overflow-hidden">
-                        <div class="font-bold truncate">${displayName}</div>
+                        <div class="font-bold truncate text-gray-800">${displayName}</div>
                         <p class="text-xs text-gray-400 truncate">${subtext}</p>
                     </div>`;
                 list.appendChild(div);
@@ -278,20 +299,31 @@
         };
 
         window.selectUser = async (targetUser) => {
-            // Генерируем ID комнаты для лички (всегда одинаковый для пары А и Б)
             const chatId = [user, targetUser].sort().join("_v_");
             activeChat = { id: chatId, type: 'direct', targetUser };
+            await setDoc(doc(db, ROOT, "direct_chats", "list", chatId), { last_msg_time: serverTimestamp() }, { merge: true });
             updateUI();
             subscribeToMessages(collection(db, ROOT, "direct_chats", "list", chatId, "messages"));
         };
 
         function subscribeToMessages(colRef) {
             if (window.msgUnsub) window.msgUnsub();
-            if (window.innerWidth <= 768) goBack(); // Close sidebar on mobile
+            const area = document.getElementById('activeChannelContent');
+            area.style.opacity = '0';
             
             window.msgUnsub = onSnapshot(colRef, (s) => {
                 const msgs = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.time?.seconds||0)-(b.time?.seconds||0));
                 renderMessages(msgs);
+                area.style.opacity = '1';
+                
+                // Система просмотров: если это канал, отмечаем просмотр
+                if(activeChat.type === 'channel') {
+                    msgs.forEach(m => {
+                        if(m.sender !== user && (!m.viewedBy || !m.viewedBy.includes(user))) {
+                            updateDoc(doc(colRef, m.id), { viewedBy: arrayUnion(user) });
+                        }
+                    });
+                }
             });
             
             if (window.innerWidth <= 768) {
@@ -304,13 +336,23 @@
             area.innerHTML = '';
             msgs.forEach(m => {
                 const isMine = m.sender === user;
-                const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
+                const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                const viewsCount = m.viewedBy ? m.viewedBy.length : 0;
+                
                 const div = document.createElement('div');
                 div.className = `message-bubble ${isMine ? 'mine' : ''}`;
                 div.innerHTML = `
                     ${!isMine && activeChat.type === 'channel' ? `<div class="text-[10px] font-bold text-blue-600 mb-1">@${m.sender}</div>` : ''}
                     <div class="break-words">${m.text}</div>
-                    <div class="text-[9px] mt-1 text-right ${isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
+                    <div class="flex items-center justify-end gap-2 mt-1">
+                        ${activeChat.type === 'channel' ? `
+                            <div class="views-badge">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg>
+                                <span>${viewsCount}</span>
+                            </div>
+                        ` : ''}
+                        <div class="text-[9px] ${isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
+                    </div>
                 `;
                 area.appendChild(div);
             });
@@ -328,8 +370,12 @@
                 : collection(db, ROOT, "direct_chats", "list", activeChat.id, "messages");
                 
             await addDoc(colPath, {
-                text, sender: user, time: serverTimestamp(), views: 1
+                text, sender: user, time: serverTimestamp(), viewedBy: [user]
             });
+
+            if(activeChat.type === 'direct') {
+                await updateDoc(doc(db, ROOT, "direct_chats", "list", activeChat.id), { last_msg_time: serverTimestamp() });
+            }
         };
 
         function updateUI() {
@@ -345,7 +391,7 @@
                 const c = activeChat.data;
                 headerTitle.textContent = c.name;
                 headerMeta.textContent = `@${c.link} • ${c.subscribers?.length || 0} подп.`;
-                avatar.textContent = c.name[0];
+                avatar.textContent = c.name[0].toUpperCase();
                 avatar.style.background = getHashColor(c.name);
                 
                 const isOwner = c.owner === user;
@@ -356,7 +402,7 @@
                 document.getElementById('subscriberControls').classList.toggle('hidden', isOwner || subbed);
             } else {
                 headerTitle.textContent = `@${activeChat.targetUser}`;
-                headerMeta.textContent = `Личная переписка`;
+                headerMeta.textContent = `Личный чат`;
                 avatar.textContent = activeChat.targetUser[0].toUpperCase();
                 avatar.style.background = getHashColor(activeChat.targetUser);
                 
@@ -373,17 +419,6 @@
             await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayUnion(user) });
             showToast("Вы подписались!");
             updateUI();
-        };
-
-        window.leaveCurrentChannel = async () => {
-            if (activeChat.type !== 'channel') return;
-            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayRemove(activeChat.id) });
-            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayRemove(user) });
-            activeChat = null;
-            document.getElementById('noChannelView').classList.remove('hidden');
-            document.getElementById('activeChannelContent').classList.add('hidden');
-            goBack();
-            renderChatList();
         };
 
         window.saveChannel = async () => {
@@ -418,13 +453,25 @@
             const meta = document.getElementById('profMeta');
             meta.innerHTML = isChan 
                 ? `<p class="text-sm">Владелец: @${activeChat.data.owner}</p><p class="text-sm">Подписчиков: ${activeChat.data.subscribers?.length || 0}</p>`
-                : `<p class="text-sm">Это ваш личный чат с пользователем @${activeChat.targetUser}. Ваши сообщения защищены.</p>`;
+                : `<p class="text-sm">Личный чат защищен сквозным шифрованием pnavkv2.</p>`;
             
             document.getElementById('profileModal').style.display = 'flex';
         };
 
-        function showToast(t) { const el = document.getElementById('toast'); el.textContent = t; el.style.opacity = '1'; setTimeout(()=>el.style.opacity='0', 3000); }
-        function getHashColor(s) { const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; let h = 0; for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return c[Math.abs(h) % c.length]; }
+        function showToast(t) { 
+            const el = document.getElementById('toast'); 
+            el.textContent = t; 
+            el.style.opacity = '1'; 
+            setTimeout(()=>el.style.opacity='0', 3000); 
+        }
+
+        function getHashColor(s) { 
+            const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; 
+            let h = 0; 
+            for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); 
+            return c[Math.abs(h) % c.length]; 
+        }
+
         document.getElementById('msgInput').addEventListener('keypress', e => e.key === 'Enter' && sendMessage());
     </script>
 </body>
