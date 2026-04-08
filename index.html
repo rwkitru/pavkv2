@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>pnavkv2 - Cloud Edition</title>
+    <title>pnavkv2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,118 +13,121 @@
         .sidebar { width: 350px; min-width: 350px; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; background: #fff; height: 100vh; }
         .main-content { flex: 1; display: flex; flex-direction: column; background: #f0f2f5; height: 100vh; position: relative; }
         
-        /* Фикс для предотвращения смещения кнопки создания */
-        .header-controls { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
-        
-        #searchContainer { display: flex; align-items: center; background: #f1f5f9; border-radius: 10px; width: 34px; height: 34px; overflow: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; flex-shrink: 0; }
-        #searchContainer.expanded { width: 180px; cursor: default; }
-        #searchInput { width: 0; opacity: 0; background: transparent; border: none; outline: none; padding-left: 6px; font-size: 13px; transition: width 0.3s, opacity 0.2s; }
-        #searchContainer.expanded #searchInput { width: 140px; opacity: 1; }
-        
-        .btn-square { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 10px; transition: all 0.2s; flex-shrink: 0; }
         .chat-item { transition: all 0.2s; cursor: pointer; border-radius: 12px; margin: 4px 8px; padding: 12px; display: flex; align-items: center; gap: 12px; }
         .chat-item:hover { background: #f8fafc; }
         .chat-item.active { background: #eff6ff; }
-        .avatar { width: 48px; height: 48px; border-radius: 50%; background: #7c4dff; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
-        .message-bubble { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; position: relative; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.06); word-wrap: break-word; }
-        .msg-in { background: #fff; align-self: flex-start; border-bottom-left-radius: 4px; }
-        .msg-out { background: #effdde; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .msg-footer { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 11px; color: #6a737d; margin-top: 4px; }
-        .custom-alert { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; }
+        .avatar { width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
+        
+        .message-bubble { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); position: relative; }
         #messagesArea { scroll-behavior: smooth; background: #e5ddd5; background-image: radial-gradient(#d1d1d1 1px, transparent 0); background-size: 20px 20px; }
-        .auth-screen { position: fixed; inset: 0; background: #f4f7fa; z-index: 200; display: flex; align-items: center; justify-content: center; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
+        .custom-alert { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; }
+        
+        #searchContainer { display: flex; align-items: center; background: #f1f5f9; border-radius: 10px; width: 34px; height: 34px; overflow: hidden; transition: width 0.3s; cursor: pointer; }
+        #searchContainer.expanded { width: 180px; }
+        #searchInput { width: 0; opacity: 0; background: transparent; border: none; outline: none; padding-left: 8px; font-size: 13px; transition: width 0.3s, opacity 0.2s; }
+        #searchContainer.expanded #searchInput { width: 140px; opacity: 1; }
     </style>
 </head>
 <body class="flex">
 
-    <!-- Экран Аутентификации -->
-    <div id="authScreen" class="auth-screen">
+    <!-- Экран авторизации -->
+    <div id="authScreen" class="fixed inset-0 bg-[#f4f7fa] z-[200] flex items-center justify-center">
         <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md">
-            <h1 class="text-2xl font-bold text-center mb-2">pnavkv2</h1>
-            <p class="text-gray-400 text-center mb-8" id="authSubtitle">Вход или Регистрация</p>
-            
+            <h1 class="text-2xl font-bold text-center mb-2" id="authTitle">Регистрация</h1>
+            <p class="text-gray-400 text-center mb-8" id="authSubtitle">Создайте аккаунт pnavkv2</p>
             <div class="space-y-4">
-                <div>
-                    <label class="text-xs font-semibold text-gray-400 uppercase ml-1">Username</label>
-                    <input type="text" id="authUsername" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-blue-500" placeholder="От 4 до 12 символов">
-                </div>
-                <div>
-                    <label class="text-xs font-semibold text-gray-400 uppercase ml-1">Password</label>
-                    <input type="password" id="authPassword" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-blue-500" placeholder="Ваш пароль">
-                </div>
-                
-                <button id="mainAuthBtn" onclick="handleAuth()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-all mt-4">
-                    Войти / Создать
+                <input type="text" id="authUsername" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="Никнейм (4-12 симв)">
+                <input type="password" id="authPassword" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="Пароль">
+                <button onclick="handleAuth()" id="mainAuthBtn" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all">
+                    <span id="authBtnText">Зарегистрироваться</span>
                 </button>
             </div>
-            <p class="text-[11px] text-gray-400 mt-6 text-center">
-                Только латинские буквы, цифры (не в начале) и символ "_"
-            </p>
+            <div class="mt-6 text-center">
+                <button onclick="toggleAuthMode()" id="toggleAuthBtn" class="text-blue-600 font-semibold text-sm">Уже есть аккаунт? Войти</button>
+            </div>
         </div>
     </div>
 
-    <!-- Основной интерфейс -->
+    <!-- Боковая панель -->
     <aside class="sidebar" id="appSidebar" style="display:none;">
         <div class="p-4 flex items-center justify-between">
-            <h2 class="text-xl font-bold text-gray-800 flex-shrink-0">Чаты</h2>
-            <div class="header-controls">
-                <div id="searchContainer" onclick="expandSearch()">
-                    <div class="p-1.5 text-gray-500">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2.5"></path></svg>
-                    </div>
+            <h2 class="text-xl font-bold">Каналы</h2>
+            <div class="flex gap-2">
+                <div id="searchContainer" onclick="this.classList.add('expanded'); document.getElementById('searchInput').focus();">
+                    <div class="p-2 text-gray-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2.5"></path></svg></div>
                     <input type="text" id="searchInput" placeholder="Поиск..." oninput="renderChannels()">
                 </div>
-                <button onclick="openCreateModal()" class="btn-square bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-200">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2.5" stroke-linecap="round"></path></svg>
-                </button>
+                <button onclick="openCreateModal()" class="w-9 h-9 flex items-center justify-center bg-blue-600 text-white rounded-xl shadow-md"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2.5"></path></svg></button>
             </div>
         </div>
         <div id="channelList" class="flex-1 overflow-y-auto"></div>
-        <div class="p-4 border-t bg-gray-50 flex items-center justify-between">
-            <span id="myUsername" class="font-medium text-sm text-gray-600">@user</span>
-            <button onclick="logout()" class="text-xs text-red-500 font-bold">Выйти</button>
+        <div class="p-4 border-t bg-gray-50 flex items-center justify-center">
+            <span id="myUsername" class="font-bold text-sm text-gray-500">@user</span>
         </div>
     </aside>
 
-    <main class="main-content flex flex-col" id="chatView" style="display:none;">
-        <div id="noChannelView" class="flex-1 flex flex-col items-center justify-center text-gray-400 text-center p-10">
-            <div class="bg-white p-8 rounded-full mb-6 shadow-sm">
-                <svg class="w-16 h-16 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-width="2"></path></svg>
-            </div>
-            <p class="text-lg font-medium text-gray-500">Выберите чат</p>
+    <!-- Основной контент -->
+    <main class="main-content" id="chatView" style="display:none;">
+        <div id="noChannelView" class="flex-1 flex flex-col items-center justify-center text-gray-400">
+            <p>Выберите канал</p>
         </div>
 
         <div id="activeChannelContent" class="hidden flex-1 flex flex-col h-full overflow-hidden">
-            <header class="bg-white h-[64px] px-4 border-b flex items-center justify-between flex-shrink-0">
-                <div class="flex items-center gap-3">
+            <header class="bg-white h-[64px] px-4 border-b flex items-center justify-between shadow-sm z-10">
+                <div class="flex items-center gap-3 cursor-pointer" onclick="openChannelProfile()">
                     <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold">?</div>
                     <div>
                         <h3 id="headerTitle" class="font-bold text-gray-800 leading-tight">Название</h3>
-                        <p id="headerMeta" class="text-xs text-gray-400">@link</p>
+                        <div class="flex items-center gap-2">
+                            <p id="headerMeta" class="text-xs text-blue-500">@link</p>
+                            <span class="text-[10px] text-gray-300">•</span>
+                            <p id="headerSubsCount" class="text-[10px] text-gray-400">0 подписчиков</p>
+                        </div>
                     </div>
                 </div>
+                <button id="editChannelBtn" onclick="openEditModal()" class="hidden text-xs bg-gray-100 px-3 py-1.5 rounded-lg font-bold text-gray-600">Ред.</button>
             </header>
+            
             <div id="messagesArea" class="flex-1 overflow-y-auto p-4 flex flex-col"></div>
-            <footer class="bg-white p-3 flex items-center gap-3 border-t flex-shrink-0">
-                <input type="text" id="msgInput" placeholder="Написать..." class="flex-1 bg-gray-50 border-none outline-none p-3 rounded-2xl text-[15px] focus:bg-white focus:ring-1 focus:ring-blue-100 transition-all">
-                <button onclick="sendMessage()" class="w-10 h-10 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded-full">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                </button>
+            
+            <footer id="chatFooter" class="bg-white p-3 border-t">
+                <div id="ownerControls" class="hidden flex items-center gap-3">
+                    <input type="text" id="msgInput" placeholder="Опубликовать пост..." class="flex-1 bg-gray-50 p-3 rounded-2xl outline-none">
+                    <button onclick="sendMessage()" class="text-blue-600 p-2"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
+                </div>
+                <div id="subscriberControls" class="hidden flex items-center justify-center py-2">
+                    <button id="joinBtn" onclick="toggleJoin()" class="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold">Вступить</button>
+                    <p id="joinedLabel" class="hidden text-gray-400 text-sm font-medium">Вы подписаны</p>
+                </div>
             </footer>
         </div>
     </main>
 
-    <div id="createModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) closeCreateModal()">
-        <div class="bg-white p-6 rounded-3xl w-full max-w-[400px] shadow-2xl">
-            <h2 class="text-xl font-bold mb-6 text-gray-800">Новый чат</h2>
+    <!-- Модальные окна -->
+    <div id="channelModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) closeChannelModal()">
+        <div class="bg-white p-6 rounded-3xl w-full max-w-[400px]">
+            <h2 id="modalTitle" class="text-xl font-bold mb-6">Канал</h2>
             <div class="space-y-4">
-                <input type="text" id="newName" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="Название">
-                <input type="text" id="newId" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="ID (без @)">
-                <div class="flex gap-3 pt-4">
-                    <button onclick="closeCreateModal()" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-xl">Отмена</button>
-                    <button onclick="confirmCreate()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-100">Создать</button>
+                <input type="text" id="channelNameInput" class="w-full p-3 bg-gray-50 border rounded-xl outline-none" placeholder="Название">
+                <input type="text" id="channelIdInput" class="w-full p-3 bg-gray-50 border rounded-xl outline-none" placeholder="Ссылка (id)">
+                <div class="flex gap-3">
+                    <button onclick="closeChannelModal()" class="flex-1 py-3 text-gray-500 font-bold">Отмена</button>
+                    <button onclick="saveChannel()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">ОК</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="profileModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) this.style.display='none'">
+        <div class="bg-white p-8 rounded-3xl w-full max-w-[350px] text-center">
+            <div id="profAvatar" class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl text-white font-bold">?</div>
+            <h2 id="profName" class="text-xl font-bold">Имя</h2>
+            <p id="profId" class="text-blue-500 mb-4">@id</p>
+            <div class="text-left border-t pt-4 space-y-2">
+                <p id="profOwner" class="text-sm">Владелец: @user</p>
+                <p id="profStats" class="text-sm font-semibold text-gray-700">Подписчиков: 0</p>
             </div>
         </div>
     </div>
@@ -133,14 +136,12 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, query, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Твой новый конфиг Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBAFGyrgliehm-cfJG91QkQRvUGACPP8rA",
             authDomain: "elytrwcloud.firebaseapp.com",
-            databaseURL: "https://elytrwcloud-default-rtdb.firebaseio.com",
             projectId: "elytrwcloud",
             storageBucket: "elytrwcloud.firebasestorage.app",
             messagingSenderId: "816418199024",
@@ -150,141 +151,131 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pnavkv2-custom';
+        const ROOT = "pnavkv2_final";
 
-        let currentUser = null;
+        let user = null;
         let channels = [];
+        let mySubs = [];
         let activeId = null;
-        let messagesUnsubscribe = null;
+        let authMode = 'register';
+        let isEdit = false;
 
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
+        const sessionViewed = new Set();
+        const VIEW_COOLDOWN = 5 * 60 * 1000;
+
+        const savedUser = localStorage.getItem('pnavkv2_user');
+        if (savedUser) loginAs(savedUser);
+        signInAnonymously(auth);
+
+        window.toggleAuthMode = () => {
+            authMode = authMode === 'register' ? 'login' : 'register';
+            document.getElementById('authTitle').textContent = authMode === 'login' ? 'Вход' : 'Регистрация';
+            document.getElementById('authBtnText').textContent = authMode === 'login' ? 'Войти' : 'Зарегистрироваться';
         };
-        initAuth();
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const savedUsername = localStorage.getItem('pnavkv2_logged_user');
-                if (savedUsername) await loginAs(savedUsername);
-            } else {
-                showAuthScreen();
-            }
-        });
 
         window.handleAuth = async () => {
-            const username = document.getElementById('authUsername').value.trim().toLowerCase();
-            const password = document.getElementById('authPassword').value;
-
-            if (!/^[a-z][a-z0-9_]{3,11}$/.test(username)) {
-                return showToast("Ошибка: 4-12 симв, латиница, цифры не в начале");
-            }
-            if (password.length < 4) return showToast("Слишком короткий пароль");
-
-            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', username);
-            const userSnap = await getDoc(userRef);
-
-            if (userSnap.exists()) {
-                if (userSnap.data().password === password) {
-                    await loginAs(username);
-                } else {
-                    showToast("Неверный пароль или имя занято");
-                }
+            const name = document.getElementById('authUsername').value.trim().toLowerCase();
+            const pass = document.getElementById('authPassword').value;
+            if (name.length < 4) return showToast("Минимум 4 символа");
+            
+            const uRef = doc(db, ROOT, "users", "list", name);
+            const snap = await getDoc(uRef);
+            if (authMode === 'register') {
+                if (snap.exists()) return showToast("Ник занят");
+                await setDoc(uRef, { username: name, password: pass, subs: [] });
+                loginAs(name);
             } else {
-                await setDoc(userRef, { username, password, createdAt: serverTimestamp() });
-                await loginAs(username);
-                showToast("Аккаунт создан!");
+                if (!snap.exists() || snap.data().password !== pass) return showToast("Ошибка входа");
+                loginAs(name);
             }
         };
 
-        async function loginAs(username) {
-            currentUser = username;
-            localStorage.setItem('pnavkv2_logged_user', username);
+        function loginAs(name) {
+            user = name;
+            localStorage.setItem('pnavkv2_user', name);
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('appSidebar').style.display = 'flex';
             document.getElementById('chatView').style.display = 'flex';
-            document.getElementById('myUsername').textContent = '@' + username;
-            startSync();
-        }
+            document.getElementById('myUsername').textContent = '@' + name;
+            
+            onSnapshot(doc(db, ROOT, "users", "list", name), (s) => {
+                if(s.exists()) { mySubs = s.data().subs || []; renderChannels(); }
+            });
 
-        window.logout = () => {
-            localStorage.removeItem('pnavkv2_logged_user');
-            location.reload();
-        };
-
-        function showAuthScreen() {
-            document.getElementById('authScreen').style.display = 'flex';
-        }
-
-        function startSync() {
-            const channelsQuery = collection(db, 'artifacts', appId, 'public', 'data', 'channels');
-            onSnapshot(channelsQuery, (snapshot) => {
-                channels = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            onSnapshot(collection(db, ROOT, "channels", "list"), (s) => {
+                channels = s.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderChannels();
+                if (activeId) updateChannelUI();
             });
         }
 
         window.renderChannels = () => {
             const list = document.getElementById('channelList');
-            const queryVal = document.getElementById('searchInput').value.toLowerCase().trim();
+            const search = document.getElementById('searchInput').value.toLowerCase();
             list.innerHTML = '';
-            
-            const filtered = channels.filter(c => 
-                c.link.includes(queryVal) || c.name.toLowerCase().includes(queryVal)
-            );
-
-            filtered.forEach(c => {
+            channels.filter(c => {
+                if (search) return c.name.toLowerCase().includes(search) || c.link.includes(search);
+                return c.owner === user || mySubs.includes(c.id);
+            }).forEach(c => {
                 const div = document.createElement('div');
                 div.className = `chat-item ${activeId === c.id ? 'active' : ''}`;
                 div.onclick = () => selectChannel(c.id);
-                div.innerHTML = `
-                    <div class="avatar" style="background:${getHashColor(c.name)}">${c.name[0]}</div>
+                div.innerHTML = `<div class="avatar" style="background:${getHashColor(c.name)}">${c.name[0]}</div>
                     <div class="flex-1 overflow-hidden">
-                        <span class="font-bold text-gray-900 truncate">${c.name}</span>
+                        <div class="font-bold truncate">${c.name}</div>
                         <p class="text-xs text-gray-400">@${c.link}</p>
-                    </div>
-                `;
+                    </div>`;
                 list.appendChild(div);
             });
         };
 
         window.selectChannel = (id) => {
-            if (messagesUnsubscribe) messagesUnsubscribe();
             activeId = id;
-            const c = channels.find(x => x.id === id);
-            
-            document.getElementById('noChannelView').classList.add('hidden');
-            document.getElementById('activeChannelContent').classList.remove('hidden');
-            document.getElementById('headerTitle').textContent = c.name;
-            document.getElementById('headerAvatar').textContent = c.name[0];
-            document.getElementById('headerAvatar').style.background = getHashColor(c.name);
-            document.getElementById('headerMeta').textContent = "@" + c.link;
-
-            const msgsQuery = collection(db, 'artifacts', appId, 'public', 'data', 'channels', id, 'messages');
-            messagesUnsubscribe = onSnapshot(msgsQuery, (snapshot) => {
-                const msgs = snapshot.docs
-                    .map(doc => doc.data())
-                    .sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+            updateChannelUI();
+            if (window.msgUnsub) window.msgUnsub();
+            window.msgUnsub = onSnapshot(collection(db, ROOT, "channels", "list", id, "messages"), (s) => {
+                const msgs = s.docs.map(d => ({msgId: d.id, ...d.data()})).sort((a,b) => (a.time?.seconds||0)-(b.time?.seconds||0));
                 renderMessages(msgs);
+                msgs.forEach(m => processView(id, m.msgId, m.sender));
             });
             renderChannels();
         };
+
+        async function processView(channelId, msgId, sender) {
+            if (sender === user) return; 
+            if (sessionViewed.has(msgId)) return;
+
+            const storageKey = `pv_${user}_${msgId}`;
+            const lastView = localStorage.getItem(storageKey);
+            const now = Date.now();
+
+            if (!lastView || (now - parseInt(lastView)) > VIEW_COOLDOWN) {
+                sessionViewed.add(msgId);
+                try {
+                    const mRef = doc(db, ROOT, "channels", "list", channelId, "messages", msgId);
+                    await updateDoc(mRef, { views: increment(1) });
+                    localStorage.setItem(storageKey, now.toString());
+                } catch (e) { console.error(e); }
+            }
+        }
 
         function renderMessages(msgs) {
             const area = document.getElementById('messagesArea');
             area.innerHTML = '';
             msgs.forEach(m => {
-                const isOut = m.sender === currentUser;
-                const time = m.timestamp ? new Date(m.timestamp.seconds * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '...';
+                const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
                 const div = document.createElement('div');
-                div.className = `message-bubble ${isOut ? 'msg-out' : 'msg-in'}`;
+                div.className = 'message-bubble';
                 div.innerHTML = `
-                    <div class="text-[11px] font-bold ${isOut ? 'text-blue-500' : 'text-purple-500'} mb-1">${m.sender}</div>
-                    <div>${m.text.replace(/\n/g, '<br>')}</div>
-                    <div class="msg-footer"><span>${time}</span></div>
+                    <div class="text-[10px] font-bold text-blue-600 mb-1">${m.sender}</div>
+                    <div class="text-gray-800 break-words font-medium">${m.text}</div>
+                    <div class="flex items-center justify-end gap-2 mt-1">
+                        <div class="flex items-center gap-1 text-[10px] text-gray-400">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg>
+                            <span>${m.views || 1}</span>
+                        </div>
+                        <div class="text-[9px] text-gray-400">${timeStr}</div>
+                    </div>
                 `;
                 area.appendChild(div);
             });
@@ -294,51 +285,84 @@
         window.sendMessage = async () => {
             const input = document.getElementById('msgInput');
             const text = input.value.trim();
-            if (!text || !activeId || !currentUser) return;
-
-            const msgData = {
-                text,
-                sender: currentUser,
-                timestamp: serverTimestamp()
-            };
-            
+            if (!text || !activeId) return;
             input.value = '';
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'channels', activeId, 'messages'), msgData);
+            await addDoc(collection(db, ROOT, "channels", "list", activeId, "messages"), {
+                text, sender: user, time: serverTimestamp(), views: 1
+            });
         };
 
-        window.confirmCreate = async () => {
-            const name = document.getElementById('newName').value.trim();
-            const link = document.getElementById('newId').value.trim().toLowerCase().replace('@','');
+        window.saveChannel = async () => {
+            const name = document.getElementById('channelNameInput').value.trim();
+            const link = document.getElementById('channelIdInput').value.trim().toLowerCase();
+            if (!name || !link) return;
+            if (isEdit) {
+                await updateDoc(doc(db, ROOT, "channels", "list", activeId), { name });
+            } else {
+                const snap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
+                if (!snap.empty) return showToast("Ссылка занята");
+                // При создании владелец сразу подписчик (1 подп.)
+                const ref = await addDoc(collection(db, ROOT, "channels", "list"), { 
+                    name, link, owner: user, subscribers: [user] 
+                });
+                await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(ref.id) });
+                selectChannel(ref.id);
+            }
+            closeChannelModal();
+        };
+
+        function updateChannelUI() {
+            const c = channels.find(x => x.id === activeId);
+            if (!c) return;
+            document.getElementById('noChannelView').classList.add('hidden');
+            document.getElementById('activeChannelContent').classList.remove('hidden');
+            document.getElementById('headerTitle').textContent = c.name;
+            document.getElementById('headerMeta').textContent = "@" + c.link;
+            document.getElementById('headerAvatar').textContent = c.name[0];
+            document.getElementById('headerAvatar').style.background = getHashColor(c.name);
             
-            if(!name || !link) return showToast("Заполните поля");
-            if(channels.some(c => c.link === link)) return showToast("ID занят");
+            const subsCount = c.subscribers ? c.subscribers.length : 0;
+            document.getElementById('headerSubsCount').textContent = `${subsCount} подписчиков`;
 
-            const newChannel = { name, link, owner: currentUser, createdAt: serverTimestamp() };
-            const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'channels'), newChannel);
-            
-            closeCreateModal();
-            selectChannel(docRef.id);
-        };
-
-        window.showToast = (text) => {
-            const t = document.getElementById('toast');
-            t.textContent = text;
-            t.style.opacity = '1';
-            setTimeout(() => t.style.opacity = '0', 3000);
-        };
-        window.expandSearch = () => {
-            document.getElementById('searchContainer').classList.add('expanded');
-            setTimeout(() => document.getElementById('searchInput').focus(), 100);
-        };
-        window.openCreateModal = () => document.getElementById('createModal').style.display = 'flex';
-        window.closeCreateModal = () => document.getElementById('createModal').style.display = 'none';
-        function getHashColor(str) {
-            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-            return colors[Math.abs(hash) % colors.length];
+            const isOwner = c.owner === user;
+            document.getElementById('editChannelBtn').classList.toggle('hidden', !isOwner);
+            document.getElementById('ownerControls').classList.toggle('hidden', !isOwner);
+            document.getElementById('subscriberControls').classList.toggle('hidden', isOwner);
+            if (!isOwner) {
+                const subbed = mySubs.includes(activeId);
+                document.getElementById('joinBtn').classList.toggle('hidden', subbed);
+                document.getElementById('joinedLabel').classList.toggle('hidden', !subbed);
+            }
         }
-        document.getElementById('msgInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+        window.toggleJoin = async () => {
+            if (!activeId || !user) return;
+            // Добавляем в список подписок пользователя
+            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(activeId) });
+            // Добавляем пользователя в список подписчиков канала
+            await updateDoc(doc(db, ROOT, "channels", "list", activeId), { subscribers: arrayUnion(user) });
+            showToast("Вы вступили в канал!");
+        };
+
+        window.openCreateModal = () => { isEdit = false; document.getElementById('channelModal').style.display='flex'; };
+        window.openEditModal = () => { isEdit = true; document.getElementById('channelModal').style.display='flex'; };
+        window.closeChannelModal = () => document.getElementById('channelModal').style.display='none';
+        
+        window.openChannelProfile = () => { 
+            const c = channels.find(x => x.id === activeId);
+            if (!c) return;
+            document.getElementById('profName').textContent = c.name;
+            document.getElementById('profId').textContent = "@" + c.link;
+            document.getElementById('profOwner').textContent = "Владелец: @" + c.owner;
+            document.getElementById('profStats').textContent = `Подписчиков: ${c.subscribers ? c.subscribers.length : 0}`;
+            document.getElementById('profAvatar').style.background = getHashColor(c.name);
+            document.getElementById('profAvatar').textContent = c.name[0];
+            document.getElementById('profileModal').style.display = 'flex'; 
+        };
+
+        function showToast(t) { const el = document.getElementById('toast'); el.textContent = t; el.style.opacity = '1'; setTimeout(()=>el.style.opacity='0', 3000); }
+        function getHashColor(s) { const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; let h = 0; for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return c[Math.abs(h) % c.length]; }
+        document.getElementById('msgInput').addEventListener('keypress', e => e.key === 'Enter' && sendMessage());
     </script>
 </body>
 </html>
