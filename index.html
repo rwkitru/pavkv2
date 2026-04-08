@@ -12,7 +12,6 @@
         body { font-family: 'Inter', sans-serif; background-color: #f4f7fa; margin: 0; overflow: hidden; height: 100vh; height: -webkit-fill-available; }
         html { height: -webkit-fill-available; }
         
-        /* Mobile Layout Logic */
         .sidebar { width: 350px; min-width: 350px; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; background: #fff; height: 100vh; transition: transform 0.3s ease; }
         .main-content { flex: 1; display: flex; flex-direction: column; background: #f0f2f5; height: 100vh; height: -webkit-fill-available; position: relative; width: 100%; overflow: hidden; }
         
@@ -27,26 +26,21 @@
         .chat-item.active { background: #eff6ff; }
         .avatar { width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
         
-        .message-bubble { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); position: relative; }
-        #messagesArea { scroll-behavior: smooth; background: #e5ddd5; background-image: radial-gradient(#d1d1d1 1px, transparent 0); background-size: 20px 20px; overflow-y: auto; flex: 1; }
+        .message-bubble { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); align-self: flex-start; }
+        .message-bubble.mine { background: #3b82f6; color: white; border-bottom-left-radius: 18px; border-bottom-right-radius: 4px; align-self: flex-end; }
+        
+        #messagesArea { scroll-behavior: smooth; background: #e5ddd5; background-image: radial-gradient(#d1d1d1 1px, transparent 0); background-size: 20px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); padding: 20px; }
         .custom-alert { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; width: auto; max-width: 90vw; text-align: center; }
         
         #searchContainer { display: flex; align-items: center; background: #f1f5f9; border-radius: 10px; width: 40px; height: 40px; overflow: hidden; transition: width 0.3s; cursor: pointer; }
-        #searchContainer.expanded { width: 180px; }
+        #searchContainer.expanded { width: 220px; }
         #searchInput { width: 0; opacity: 0; background: transparent; border: none; outline: none; padding-left: 8px; font-size: 14px; transition: width 0.3s, opacity 0.2s; }
-        #searchContainer.expanded #searchInput { width: 140px; opacity: 1; }
+        #searchContainer.expanded #searchInput { width: 180px; opacity: 1; }
 
-        /* Input Fix for iOS and Mobile */
         input { font-size: 16px !important; }
-        
-        /* Ensure footer stays above virtual keyboard if possible and is never cut off */
-        #chatFooter { 
-            flex-shrink: 0;
-            padding-bottom: env(safe-area-inset-bottom, 12px);
-            min-height: 70px;
-        }
+        #chatFooter { flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 12px); min-height: 70px; }
     </style>
 </head>
 <body class="flex">
@@ -72,28 +66,29 @@
     <!-- Боковая панель -->
     <aside class="sidebar" id="appSidebar" style="display:none;">
         <div class="p-4 flex items-center justify-between">
-            <h2 class="text-xl font-bold">Каналы</h2>
+            <h2 class="text-xl font-bold">Чаты</h2>
             <div class="flex gap-2">
                 <div id="searchContainer" onclick="this.classList.add('expanded'); document.getElementById('searchInput').focus();">
                     <div class="p-2 text-gray-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2.5"></path></svg></div>
-                    <input type="text" id="searchInput" placeholder="Поиск..." oninput="renderChannels()">
+                    <input type="text" id="searchInput" placeholder="Поиск людей и каналов..." oninput="renderChatList()">
                 </div>
                 <button onclick="openCreateModal()" class="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-xl shadow-md active:scale-90 transition-transform"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2.5"></path></svg></button>
             </div>
         </div>
-        <div id="channelList" class="flex-1 overflow-y-auto"></div>
-        <div class="p-4 border-t bg-gray-50 flex items-center justify-center">
-            <span id="myUsername" class="font-bold text-sm text-gray-500">@user</span>
+        <div id="chatListArea" class="flex-1 overflow-y-auto"></div>
+        <div class="p-4 border-t bg-gray-50 flex items-center justify-between">
+            <span id="myUsername" class="font-bold text-sm text-gray-500 truncate max-w-[150px]">@user</span>
+            <button onclick="logout()" class="text-xs text-red-500 font-bold">Выйти</button>
         </div>
     </aside>
 
     <!-- Основной контент -->
     <main class="main-content" id="chatView" style="display:none;">
-        <div id="noChannelView" class="flex-1 flex flex-col items-center justify-center text-gray-400">
+        <div id="noChannelView" class="flex-1 flex flex-col items-center justify-center text-gray-400 px-6 text-center">
             <div class="bg-white p-6 rounded-full mb-4 shadow-sm">
                 <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
             </div>
-            <p>Выберите канал для общения</p>
+            <p>Выберите чат или найдите человека через поиск, чтобы начать общение</p>
         </div>
 
         <div id="activeChannelContent" class="hidden flex-1 flex flex-col h-full overflow-hidden">
@@ -105,30 +100,29 @@
                     <div class="flex items-center gap-2 cursor-pointer overflow-hidden" onclick="openChannelProfile()">
                         <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">?</div>
                         <div class="min-w-0">
-                            <h3 id="headerTitle" class="font-bold text-gray-800 leading-tight truncate text-sm md:text-base">Название</h3>
-                            <div class="flex items-center gap-2">
-                                <p id="headerMeta" class="text-[10px] md:text-xs text-blue-500 truncate">@link</p>
-                                <span class="text-[10px] text-gray-300">•</span>
-                                <p id="headerSubsCount" class="text-[10px] text-gray-400">0 подписчиков</p>
-                            </div>
+                            <h3 id="headerTitle" class="font-bold text-gray-800 leading-tight truncate text-sm md:text-base">Имя</h3>
+                            <p id="headerMeta" class="text-[10px] md:text-xs text-blue-500 truncate">инфо</p>
                         </div>
                     </div>
                 </div>
-                <button id="editChannelBtn" onclick="openEditModal()" class="hidden text-[10px] md:text-xs bg-gray-100 px-3 py-1.5 rounded-lg font-bold text-gray-600 active:bg-gray-200">Ред.</button>
+                <div class="flex items-center gap-2">
+                    <button id="leaveChannelBtn" onclick="leaveCurrentChannel()" class="hidden text-[10px] md:text-xs bg-red-50 px-3 py-1.5 rounded-lg font-bold text-red-500 active:bg-red-100">Выйти</button>
+                    <button id="editChannelBtn" onclick="openEditModal()" class="hidden text-[10px] md:text-xs bg-gray-100 px-3 py-1.5 rounded-lg font-bold text-gray-600 active:bg-gray-200">Ред.</button>
+                </div>
             </header>
             
-            <div id="messagesArea" class="p-3 md:p-4 flex flex-col"></div>
+            <div id="messagesArea" class="p-3 md:p-4"></div>
             
             <footer id="chatFooter" class="bg-white p-3 border-t">
-                <div id="ownerControls" class="hidden flex items-center gap-2">
-                    <input type="text" id="msgInput" placeholder="Опубликовать пост..." class="flex-1 bg-gray-100 p-3 rounded-2xl outline-none text-sm border border-transparent focus:border-blue-200">
+                <div id="messageControls" class="flex items-center gap-2">
+                    <input type="text" id="msgInput" placeholder="Напишите сообщение..." class="flex-1 bg-gray-100 p-3 rounded-2xl outline-none text-sm border border-transparent focus:border-blue-200">
                     <button onclick="sendMessage()" class="bg-blue-600 text-white p-2.5 rounded-full active:scale-90 transition-transform shadow-sm">
                         <svg class="w-5 h-5 transform rotate-90" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     </button>
                 </div>
                 <div id="subscriberControls" class="hidden flex flex-col items-center justify-center w-full">
                     <button id="joinBtn" onclick="toggleJoin()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold active:bg-blue-700 transition-colors shadow-sm text-sm">Вступить в канал</button>
-                    <p id="joinedLabel" class="hidden text-gray-400 text-sm font-medium py-2">Вы подписаны на уведомления</p>
+                    <p id="joinedLabel" class="hidden text-gray-400 text-sm font-medium py-2">Вы подписаны на обновления</p>
                 </div>
             </footer>
         </div>
@@ -137,10 +131,10 @@
     <!-- Модальные окна -->
     <div id="channelModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) closeChannelModal()">
         <div class="bg-white p-6 rounded-3xl w-full max-w-[400px]">
-            <h2 id="modalTitle" class="text-xl font-bold mb-6">Канал</h2>
+            <h2 id="modalTitle" class="text-xl font-bold mb-6">Создать канал</h2>
             <div class="space-y-4">
-                <input type="text" id="channelNameInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none" placeholder="Название">
-                <input type="text" id="channelIdInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none" placeholder="Ссылка (id)">
+                <input type="text" id="channelNameInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none" placeholder="Название канала">
+                <input type="text" id="channelIdInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none" placeholder="Уникальная ссылка (id)">
                 <div class="flex gap-3 pt-2">
                     <button onclick="closeChannelModal()" class="flex-1 py-4 text-gray-500 font-bold active:bg-gray-50 rounded-xl">Отмена</button>
                     <button onclick="saveChannel()" class="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold active:bg-blue-700">ОК</button>
@@ -154,10 +148,7 @@
             <div id="profAvatar" class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl text-white font-bold">?</div>
             <h2 id="profName" class="text-xl font-bold">Имя</h2>
             <p id="profId" class="text-blue-500 mb-4">@id</p>
-            <div class="text-left border-t pt-4 space-y-2">
-                <p id="profOwner" class="text-sm">Владелец: @user</p>
-                <p id="profStats" class="text-sm font-semibold text-gray-700">Подписчиков: 0</p>
-            </div>
+            <div id="profMeta" class="text-left border-t pt-4 space-y-2"></div>
             <button onclick="document.getElementById('profileModal').style.display='none'" class="mt-6 w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold">Закрыть</button>
         </div>
     </div>
@@ -167,7 +158,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, query, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs, increment, or, and } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBAFGyrgliehm-cfJG91QkQRvUGACPP8rA",
@@ -185,13 +176,10 @@
 
         let user = null;
         let channels = [];
+        let allUsers = [];
         let mySubs = [];
-        let activeId = null;
+        let activeChat = null; // {id, type: 'channel' | 'direct', targetUser?}
         let authMode = 'register';
-        let isEdit = false;
-
-        const sessionViewed = new Set();
-        const VIEW_COOLDOWN = 5 * 60 * 1000;
 
         const savedUser = localStorage.getItem('pnavkv2_user');
         if (savedUser) loginAs(savedUser);
@@ -204,7 +192,7 @@
         };
 
         window.handleAuth = async () => {
-            const name = document.getElementById('authUsername').value.trim().toLowerCase();
+            const name = document.getElementById('authUsername').value.trim().toLowerCase().replace('@', '');
             const pass = document.getElementById('authPassword').value;
             if (name.length < 4) return showToast("Минимум 4 символа");
             
@@ -212,7 +200,7 @@
             const snap = await getDoc(uRef);
             if (authMode === 'register') {
                 if (snap.exists()) return showToast("Ник занят");
-                await setDoc(uRef, { username: name, password: pass, subs: [] });
+                await setDoc(uRef, { username: name, password: pass, subs: [], type: 'user' });
                 loginAs(name);
             } else {
                 if (!snap.exists() || snap.data().password !== pass) return showToast("Ошибка входа");
@@ -228,73 +216,86 @@
             document.getElementById('chatView').style.display = 'flex';
             document.getElementById('myUsername').textContent = '@' + name;
             
+            // Следим за своими подписками
             onSnapshot(doc(db, ROOT, "users", "list", name), (s) => {
-                if(s.exists()) { mySubs = s.data().subs || []; renderChannels(); }
+                if(s.exists()) { mySubs = s.data().subs || []; renderChatList(); }
             });
 
+            // Список всех каналов
             onSnapshot(collection(db, ROOT, "channels", "list"), (s) => {
-                channels = s.docs.map(d => ({ id: d.id, ...d.data() }));
-                renderChannels();
-                if (activeId) updateChannelUI();
+                channels = s.docs.map(d => ({ id: d.id, ...d.data(), type: 'channel' }));
+                renderChatList();
+            });
+
+            // Список всех пользователей (для поиска)
+            onSnapshot(collection(db, ROOT, "users", "list"), (s) => {
+                allUsers = s.docs.map(d => ({ id: d.id, ...d.data(), type: 'user' }));
+                renderChatList();
             });
         }
 
-        window.renderChannels = () => {
-            const list = document.getElementById('channelList');
-            const search = document.getElementById('searchInput').value.toLowerCase();
+        window.renderChatList = () => {
+            const list = document.getElementById('chatListArea');
+            const search = document.getElementById('searchInput').value.toLowerCase().replace('@', '');
             list.innerHTML = '';
-            channels.filter(c => {
-                if (search) return c.name.toLowerCase().includes(search) || c.link.includes(search);
-                return c.owner === user || mySubs.includes(c.id);
-            }).forEach(c => {
+
+            let items = [];
+
+            if (search.length > 0) {
+                // В режиме поиска показываем всё
+                const filteredChannels = channels.filter(c => c.name.toLowerCase().includes(search) || c.link.includes(search));
+                const filteredUsers = allUsers.filter(u => u.username.toLowerCase().includes(search) && u.username !== user);
+                items = [...filteredChannels, ...filteredUsers];
+            } else {
+                // Обычный режим: мои каналы + личные переписки (пока упростим до всех пользователей, с кем была активность)
+                // Для MVP: показываем только те каналы, где я админ или подписан
+                items = channels.filter(c => c.owner === user || mySubs.includes(c.id));
+            }
+
+            items.forEach(item => {
+                const isChannel = item.type === 'channel';
+                const displayName = isChannel ? item.name : `@${item.username}`;
+                const subtext = isChannel ? `@${item.link}` : 'Личное сообщение';
+                
                 const div = document.createElement('div');
-                div.className = `chat-item ${activeId === c.id ? 'active' : ''}`;
-                div.onclick = () => selectChannel(c.id);
-                div.innerHTML = `<div class="avatar" style="background:${getHashColor(c.name)}">${c.name[0]}</div>
+                div.className = `chat-item ${activeChat?.id === item.id ? 'active' : ''}`;
+                div.onclick = () => isChannel ? selectChannel(item.id) : selectUser(item.username);
+                div.innerHTML = `
+                    <div class="avatar" style="background:${getHashColor(displayName)}">${displayName[isChannel?0:1].toUpperCase()}</div>
                     <div class="flex-1 overflow-hidden">
-                        <div class="font-bold truncate">${c.name}</div>
-                        <p class="text-xs text-gray-400">@${c.link}</p>
+                        <div class="font-bold truncate">${displayName}</div>
+                        <p class="text-xs text-gray-400 truncate">${subtext}</p>
                     </div>`;
                 list.appendChild(div);
             });
         };
 
         window.selectChannel = (id) => {
-            activeId = id;
-            updateChannelUI();
+            const c = channels.find(x => x.id === id);
+            activeChat = { id, type: 'channel', data: c };
+            updateUI();
+            subscribeToMessages(collection(db, ROOT, "channels", "list", id, "messages"));
+        };
+
+        window.selectUser = async (targetUser) => {
+            // Генерируем ID комнаты для лички (всегда одинаковый для пары А и Б)
+            const chatId = [user, targetUser].sort().join("_v_");
+            activeChat = { id: chatId, type: 'direct', targetUser };
+            updateUI();
+            subscribeToMessages(collection(db, ROOT, "direct_chats", "list", chatId, "messages"));
+        };
+
+        function subscribeToMessages(colRef) {
+            if (window.msgUnsub) window.msgUnsub();
+            if (window.innerWidth <= 768) goBack(); // Close sidebar on mobile
+            
+            window.msgUnsub = onSnapshot(colRef, (s) => {
+                const msgs = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.time?.seconds||0)-(b.time?.seconds||0));
+                renderMessages(msgs);
+            });
             
             if (window.innerWidth <= 768) {
                 document.getElementById('appSidebar').classList.add('hidden-mobile');
-            }
-
-            if (window.msgUnsub) window.msgUnsub();
-            window.msgUnsub = onSnapshot(collection(db, ROOT, "channels", "list", id, "messages"), (s) => {
-                const msgs = s.docs.map(d => ({msgId: d.id, ...d.data()})).sort((a,b) => (a.time?.seconds||0)-(b.time?.seconds||0));
-                renderMessages(msgs);
-                msgs.forEach(m => processView(id, m.msgId, m.sender));
-            });
-            renderChannels();
-        };
-
-        window.goBack = () => {
-            document.getElementById('appSidebar').classList.remove('hidden-mobile');
-        };
-
-        async function processView(channelId, msgId, sender) {
-            if (sender === user) return; 
-            if (sessionViewed.has(msgId)) return;
-
-            const storageKey = `pv_${user}_${msgId}`;
-            const lastView = localStorage.getItem(storageKey);
-            const now = Date.now();
-
-            if (!lastView || (now - parseInt(lastView)) > VIEW_COOLDOWN) {
-                sessionViewed.add(msgId);
-                try {
-                    const mRef = doc(db, ROOT, "channels", "list", channelId, "messages", msgId);
-                    await updateDoc(mRef, { views: increment(1) });
-                    localStorage.setItem(storageKey, now.toString());
-                } catch (e) { console.error(e); }
             }
         }
 
@@ -302,19 +303,14 @@
             const area = document.getElementById('messagesArea');
             area.innerHTML = '';
             msgs.forEach(m => {
+                const isMine = m.sender === user;
                 const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
                 const div = document.createElement('div');
-                div.className = 'message-bubble';
+                div.className = `message-bubble ${isMine ? 'mine' : ''}`;
                 div.innerHTML = `
-                    <div class="text-[10px] font-bold text-blue-600 mb-1">${m.sender}</div>
-                    <div class="text-gray-800 break-words font-medium text-sm md:text-base">${m.text}</div>
-                    <div class="flex items-center justify-end gap-2 mt-1">
-                        <div class="flex items-center gap-1 text-[10px] text-gray-400">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg>
-                            <span>${m.views || 1}</span>
-                        </div>
-                        <div class="text-[9px] text-gray-400">${timeStr}</div>
-                    </div>
+                    ${!isMine && activeChat.type === 'channel' ? `<div class="text-[10px] font-bold text-blue-600 mb-1">@${m.sender}</div>` : ''}
+                    <div class="break-words">${m.text}</div>
+                    <div class="text-[9px] mt-1 text-right ${isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
                 `;
                 area.appendChild(div);
             });
@@ -324,82 +320,107 @@
         window.sendMessage = async () => {
             const input = document.getElementById('msgInput');
             const text = input.value.trim();
-            if (!text || !activeId) return;
+            if (!text || !activeChat) return;
             input.value = '';
-            await addDoc(collection(db, ROOT, "channels", "list", activeId, "messages"), {
+            
+            const colPath = activeChat.type === 'channel' 
+                ? collection(db, ROOT, "channels", "list", activeChat.id, "messages")
+                : collection(db, ROOT, "direct_chats", "list", activeChat.id, "messages");
+                
+            await addDoc(colPath, {
                 text, sender: user, time: serverTimestamp(), views: 1
             });
         };
 
-        window.saveChannel = async () => {
-            const name = document.getElementById('channelNameInput').value.trim();
-            const link = document.getElementById('channelIdInput').value.trim().toLowerCase();
-            if (!name || !link) return;
-            if (isEdit) {
-                await updateDoc(doc(db, ROOT, "channels", "list", activeId), { name });
-            } else {
-                const snap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
-                if (!snap.empty) return showToast("Ссылка занята");
-                const ref = await addDoc(collection(db, ROOT, "channels", "list"), { 
-                    name, link, owner: user, subscribers: [user] 
-                });
-                await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(ref.id) });
-                selectChannel(ref.id);
-            }
-            closeChannelModal();
-        };
-
-        function updateChannelUI() {
-            const c = channels.find(x => x.id === activeId);
-            if (!c) return;
+        function updateUI() {
+            if (!activeChat) return;
             document.getElementById('noChannelView').classList.add('hidden');
             document.getElementById('activeChannelContent').classList.remove('hidden');
-            document.getElementById('headerTitle').textContent = c.name;
-            document.getElementById('headerMeta').textContent = "@" + c.link;
-            document.getElementById('headerAvatar').textContent = c.name[0];
-            document.getElementById('headerAvatar').style.background = getHashColor(c.name);
             
-            const subsCount = c.subscribers ? c.subscribers.length : 0;
-            document.getElementById('headerSubsCount').textContent = `${subsCount} подписчиков`;
-
-            const isOwner = c.owner === user;
-            document.getElementById('editChannelBtn').classList.toggle('hidden', !isOwner);
-            document.getElementById('ownerControls').classList.toggle('hidden', !isOwner);
-            document.getElementById('subscriberControls').classList.toggle('hidden', isOwner);
-            if (!isOwner) {
-                const subbed = mySubs.includes(activeId);
-                document.getElementById('joinBtn').classList.toggle('hidden', subbed);
-                document.getElementById('joinedLabel').classList.toggle('hidden', !subbed);
+            const headerTitle = document.getElementById('headerTitle');
+            const headerMeta = document.getElementById('headerMeta');
+            const avatar = document.getElementById('headerAvatar');
+            
+            if (activeChat.type === 'channel') {
+                const c = activeChat.data;
+                headerTitle.textContent = c.name;
+                headerMeta.textContent = `@${c.link} • ${c.subscribers?.length || 0} подп.`;
+                avatar.textContent = c.name[0];
+                avatar.style.background = getHashColor(c.name);
+                
+                const isOwner = c.owner === user;
+                const subbed = mySubs.includes(activeChat.id);
+                document.getElementById('editChannelBtn').classList.toggle('hidden', !isOwner);
+                document.getElementById('leaveChannelBtn').classList.toggle('hidden', isOwner || !subbed);
+                document.getElementById('messageControls').classList.toggle('hidden', !isOwner && !subbed);
+                document.getElementById('subscriberControls').classList.toggle('hidden', isOwner || subbed);
+            } else {
+                headerTitle.textContent = `@${activeChat.targetUser}`;
+                headerMeta.textContent = `Личная переписка`;
+                avatar.textContent = activeChat.targetUser[0].toUpperCase();
+                avatar.style.background = getHashColor(activeChat.targetUser);
+                
+                document.getElementById('editChannelBtn').classList.add('hidden');
+                document.getElementById('leaveChannelBtn').classList.add('hidden');
+                document.getElementById('messageControls').classList.remove('hidden');
+                document.getElementById('subscriberControls').classList.add('hidden');
             }
-            
-            // Re-scroll messages to bottom
-            setTimeout(() => {
-                const area = document.getElementById('messagesArea');
-                area.scrollTop = area.scrollHeight;
-            }, 100);
         }
 
         window.toggleJoin = async () => {
-            if (!activeId || !user) return;
-            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(activeId) });
-            await updateDoc(doc(db, ROOT, "channels", "list", activeId), { subscribers: arrayUnion(user) });
-            showToast("Вы вступили в канал!");
+            if (activeChat.type !== 'channel') return;
+            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(activeChat.id) });
+            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayUnion(user) });
+            showToast("Вы подписались!");
+            updateUI();
         };
 
-        window.openCreateModal = () => { isEdit = false; document.getElementById('channelModal').style.display='flex'; };
-        window.openEditModal = () => { isEdit = true; document.getElementById('channelModal').style.display='flex'; };
+        window.leaveCurrentChannel = async () => {
+            if (activeChat.type !== 'channel') return;
+            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayRemove(activeChat.id) });
+            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayRemove(user) });
+            activeChat = null;
+            document.getElementById('noChannelView').classList.remove('hidden');
+            document.getElementById('activeChannelContent').classList.add('hidden');
+            goBack();
+            renderChatList();
+        };
+
+        window.saveChannel = async () => {
+            const name = document.getElementById('channelNameInput').value.trim();
+            const link = document.getElementById('channelIdInput').value.trim().toLowerCase().replace('@', '');
+            if (!name || !link) return;
+            
+            const snap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
+            if (!snap.empty) return showToast("ID занят");
+            
+            const ref = await addDoc(collection(db, ROOT, "channels", "list"), { 
+                name, link, owner: user, subscribers: [user] 
+            });
+            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(ref.id) });
+            closeChannelModal();
+            selectChannel(ref.id);
+        };
+
+        window.goBack = () => document.getElementById('appSidebar').classList.remove('hidden-mobile');
+        window.openCreateModal = () => document.getElementById('channelModal').style.display='flex';
         window.closeChannelModal = () => document.getElementById('channelModal').style.display='none';
+        window.logout = () => { localStorage.clear(); location.reload(); };
         
-        window.openChannelProfile = () => { 
-            const c = channels.find(x => x.id === activeId);
-            if (!c) return;
-            document.getElementById('profName').textContent = c.name;
-            document.getElementById('profId').textContent = "@" + c.link;
-            document.getElementById('profOwner').textContent = "Владелец: @" + c.owner;
-            document.getElementById('profStats').textContent = `Подписчиков: ${c.subscribers ? c.subscribers.length : 0}`;
-            document.getElementById('profAvatar').style.background = getHashColor(c.name);
-            document.getElementById('profAvatar').textContent = c.name[0];
-            document.getElementById('profileModal').style.display = 'flex'; 
+        window.openChannelProfile = () => {
+            if (!activeChat) return;
+            const isChan = activeChat.type === 'channel';
+            document.getElementById('profName').textContent = isChan ? activeChat.data.name : `@${activeChat.targetUser}`;
+            document.getElementById('profId').textContent = isChan ? `@${activeChat.data.link}` : 'Пользователь';
+            document.getElementById('profAvatar').textContent = (isChan ? activeChat.data.name : activeChat.targetUser)[0].toUpperCase();
+            document.getElementById('profAvatar').style.background = getHashColor(isChan ? activeChat.data.name : activeChat.targetUser);
+            
+            const meta = document.getElementById('profMeta');
+            meta.innerHTML = isChan 
+                ? `<p class="text-sm">Владелец: @${activeChat.data.owner}</p><p class="text-sm">Подписчиков: ${activeChat.data.subscribers?.length || 0}</p>`
+                : `<p class="text-sm">Это ваш личный чат с пользователем @${activeChat.targetUser}. Ваши сообщения защищены.</p>`;
+            
+            document.getElementById('profileModal').style.display = 'flex';
         };
 
         function showToast(t) { const el = document.getElementById('toast'); el.textContent = t; el.style.opacity = '1'; setTimeout(()=>el.style.opacity='0', 3000); }
