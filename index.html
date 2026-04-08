@@ -2,17 +2,25 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>pnavkv2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>pnavkv2demo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f4f7fa; margin: 0; overflow: hidden; }
-        .sidebar { width: 350px; min-width: 350px; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; background: #fff; height: 100vh; }
-        .main-content { flex: 1; display: flex; flex-direction: column; background: #f0f2f5; height: 100vh; position: relative; }
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7fa; margin: 0; overflow: hidden; height: 100vh; }
         
+        /* Mobile Layout Logic */
+        .sidebar { width: 350px; min-width: 350px; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; background: #fff; height: 100vh; transition: transform 0.3s ease; }
+        .main-content { flex: 1; display: flex; flex-direction: column; background: #f0f2f5; height: 100vh; position: relative; width: 100%; }
+        
+        @media (max-width: 768px) {
+            .sidebar { position: absolute; width: 100%; min-width: 100%; z-index: 50; }
+            .sidebar.hidden-mobile { transform: translateX(-100%); }
+            .main-content { width: 100vw; }
+        }
+
         .chat-item { transition: all 0.2s; cursor: pointer; border-radius: 12px; margin: 4px 8px; padding: 12px; display: flex; align-items: center; gap: 12px; }
         .chat-item:hover { background: #f8fafc; }
         .chat-item.active { background: #eff6ff; }
@@ -21,26 +29,29 @@
         .message-bubble { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); position: relative; }
         #messagesArea { scroll-behavior: smooth; background: #e5ddd5; background-image: radial-gradient(#d1d1d1 1px, transparent 0); background-size: 20px 20px; }
         
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
-        .custom-alert { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); padding: 20px; }
+        .custom-alert { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; width: auto; max-width: 90vw; text-align: center; }
         
-        #searchContainer { display: flex; align-items: center; background: #f1f5f9; border-radius: 10px; width: 34px; height: 34px; overflow: hidden; transition: width 0.3s; cursor: pointer; }
+        #searchContainer { display: flex; align-items: center; background: #f1f5f9; border-radius: 10px; width: 40px; height: 40px; overflow: hidden; transition: width 0.3s; cursor: pointer; }
         #searchContainer.expanded { width: 180px; }
-        #searchInput { width: 0; opacity: 0; background: transparent; border: none; outline: none; padding-left: 8px; font-size: 13px; transition: width 0.3s, opacity 0.2s; }
+        #searchInput { width: 0; opacity: 0; background: transparent; border: none; outline: none; padding-left: 8px; font-size: 14px; transition: width 0.3s, opacity 0.2s; }
         #searchContainer.expanded #searchInput { width: 140px; opacity: 1; }
+
+        /* Smooth inputs for mobile */
+        input { font-size: 16px !important; } 
     </style>
 </head>
 <body class="flex">
 
     <!-- Экран авторизации -->
-    <div id="authScreen" class="fixed inset-0 bg-[#f4f7fa] z-[200] flex items-center justify-center">
-        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md">
+    <div id="authScreen" class="fixed inset-0 bg-[#f4f7fa] z-[200] flex items-center justify-center p-4">
+        <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl w-full max-w-md">
             <h1 class="text-2xl font-bold text-center mb-2" id="authTitle">Регистрация</h1>
-            <p class="text-gray-400 text-center mb-8" id="authSubtitle">Создайте аккаунт pnavkv2</p>
+            <p class="text-gray-400 text-center mb-8 text-sm" id="authSubtitle">Создайте аккаунт pnavkv2</p>
             <div class="space-y-4">
-                <input type="text" id="authUsername" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="Никнейм (4-12 симв)">
-                <input type="password" id="authPassword" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="Пароль">
-                <button onclick="handleAuth()" id="mainAuthBtn" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all">
+                <input type="text" id="authUsername" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="Никнейм (4-12 симв)">
+                <input type="password" id="authPassword" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="Пароль">
+                <button onclick="handleAuth()" id="mainAuthBtn" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all active:scale-95">
                     <span id="authBtnText">Зарегистрироваться</span>
                 </button>
             </div>
@@ -56,10 +67,10 @@
             <h2 class="text-xl font-bold">Каналы</h2>
             <div class="flex gap-2">
                 <div id="searchContainer" onclick="this.classList.add('expanded'); document.getElementById('searchInput').focus();">
-                    <div class="p-2 text-gray-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2.5"></path></svg></div>
+                    <div class="p-2 text-gray-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2.5"></path></svg></div>
                     <input type="text" id="searchInput" placeholder="Поиск..." oninput="renderChannels()">
                 </div>
-                <button onclick="openCreateModal()" class="w-9 h-9 flex items-center justify-center bg-blue-600 text-white rounded-xl shadow-md"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2.5"></path></svg></button>
+                <button onclick="openCreateModal()" class="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-xl shadow-md active:scale-90 transition-transform"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2.5"></path></svg></button>
             </div>
         </div>
         <div id="channelList" class="flex-1 overflow-y-auto"></div>
@@ -71,35 +82,44 @@
     <!-- Основной контент -->
     <main class="main-content" id="chatView" style="display:none;">
         <div id="noChannelView" class="flex-1 flex flex-col items-center justify-center text-gray-400">
-            <p>Выберите канал</p>
+            <div class="bg-white p-6 rounded-full mb-4 shadow-sm">
+                <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+            </div>
+            <p>Выберите канал для общения</p>
         </div>
 
         <div id="activeChannelContent" class="hidden flex-1 flex flex-col h-full overflow-hidden">
-            <header class="bg-white h-[64px] px-4 border-b flex items-center justify-between shadow-sm z-10">
-                <div class="flex items-center gap-3 cursor-pointer" onclick="openChannelProfile()">
-                    <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold">?</div>
-                    <div>
-                        <h3 id="headerTitle" class="font-bold text-gray-800 leading-tight">Название</h3>
-                        <div class="flex items-center gap-2">
-                            <p id="headerMeta" class="text-xs text-blue-500">@link</p>
-                            <span class="text-[10px] text-gray-300">•</span>
-                            <p id="headerSubsCount" class="text-[10px] text-gray-400">0 подписчиков</p>
+            <header class="bg-white h-[64px] px-3 md:px-4 border-b flex items-center justify-between shadow-sm z-10">
+                <div class="flex items-center gap-2 md:gap-3 flex-1 min-width-0">
+                    <!-- Кнопка назад для мобилок -->
+                    <button onclick="goBack()" class="md:hidden p-2 text-gray-500 active:bg-gray-100 rounded-full">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-width="2.5"></path></svg>
+                    </button>
+                    <div class="flex items-center gap-2 cursor-pointer overflow-hidden" onclick="openChannelProfile()">
+                        <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">?</div>
+                        <div class="min-width-0">
+                            <h3 id="headerTitle" class="font-bold text-gray-800 leading-tight truncate text-sm md:text-base">Название</h3>
+                            <div class="flex items-center gap-2">
+                                <p id="headerMeta" class="text-[10px] md:text-xs text-blue-500 truncate">@link</p>
+                                <span class="text-[10px] text-gray-300">•</span>
+                                <p id="headerSubsCount" class="text-[10px] text-gray-400">0 подписчиков</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <button id="editChannelBtn" onclick="openEditModal()" class="hidden text-xs bg-gray-100 px-3 py-1.5 rounded-lg font-bold text-gray-600">Ред.</button>
+                <button id="editChannelBtn" onclick="openEditModal()" class="hidden text-[10px] md:text-xs bg-gray-100 px-3 py-1.5 rounded-lg font-bold text-gray-600 active:bg-gray-200">Ред.</button>
             </header>
             
-            <div id="messagesArea" class="flex-1 overflow-y-auto p-4 flex flex-col"></div>
+            <div id="messagesArea" class="flex-1 overflow-y-auto p-3 md:p-4 flex flex-col"></div>
             
-            <footer id="chatFooter" class="bg-white p-3 border-t">
-                <div id="ownerControls" class="hidden flex items-center gap-3">
-                    <input type="text" id="msgInput" placeholder="Опубликовать пост..." class="flex-1 bg-gray-50 p-3 rounded-2xl outline-none">
-                    <button onclick="sendMessage()" class="text-blue-600 p-2"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
+            <footer id="chatFooter" class="bg-white p-3 border-t pb-safe">
+                <div id="ownerControls" class="hidden flex items-center gap-2">
+                    <input type="text" id="msgInput" placeholder="Опубликовать пост..." class="flex-1 bg-gray-50 p-3 md:p-4 rounded-2xl outline-none text-sm">
+                    <button onclick="sendMessage()" class="text-blue-600 p-2 active:scale-90 transition-transform"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
                 </div>
-                <div id="subscriberControls" class="hidden flex items-center justify-center py-2">
-                    <button id="joinBtn" onclick="toggleJoin()" class="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold">Вступить</button>
-                    <p id="joinedLabel" class="hidden text-gray-400 text-sm font-medium">Вы подписаны</p>
+                <div id="subscriberControls" class="hidden flex items-center justify-center py-1">
+                    <button id="joinBtn" onclick="toggleJoin()" class="w-full md:w-auto bg-blue-600 text-white px-8 py-3 rounded-xl font-bold active:bg-blue-700 transition-colors">Вступить</button>
+                    <p id="joinedLabel" class="hidden text-gray-400 text-sm font-medium py-2">Вы подписаны</p>
                 </div>
             </footer>
         </div>
@@ -110,11 +130,11 @@
         <div class="bg-white p-6 rounded-3xl w-full max-w-[400px]">
             <h2 id="modalTitle" class="text-xl font-bold mb-6">Канал</h2>
             <div class="space-y-4">
-                <input type="text" id="channelNameInput" class="w-full p-3 bg-gray-50 border rounded-xl outline-none" placeholder="Название">
-                <input type="text" id="channelIdInput" class="w-full p-3 bg-gray-50 border rounded-xl outline-none" placeholder="Ссылка (id)">
-                <div class="flex gap-3">
-                    <button onclick="closeChannelModal()" class="flex-1 py-3 text-gray-500 font-bold">Отмена</button>
-                    <button onclick="saveChannel()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">ОК</button>
+                <input type="text" id="channelNameInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none" placeholder="Название">
+                <input type="text" id="channelIdInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none" placeholder="Ссылка (id)">
+                <div class="flex gap-3 pt-2">
+                    <button onclick="closeChannelModal()" class="flex-1 py-4 text-gray-500 font-bold active:bg-gray-50 rounded-xl">Отмена</button>
+                    <button onclick="saveChannel()" class="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold active:bg-blue-700">ОК</button>
                 </div>
             </div>
         </div>
@@ -129,6 +149,7 @@
                 <p id="profOwner" class="text-sm">Владелец: @user</p>
                 <p id="profStats" class="text-sm font-semibold text-gray-700">Подписчиков: 0</p>
             </div>
+            <button onclick="document.getElementById('profileModal').style.display='none'" class="mt-6 w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold">Закрыть</button>
         </div>
     </div>
 
@@ -232,6 +253,12 @@
         window.selectChannel = (id) => {
             activeId = id;
             updateChannelUI();
+            
+            // Mobile: hide sidebar when channel selected
+            if (window.innerWidth <= 768) {
+                document.getElementById('appSidebar').classList.add('hidden-mobile');
+            }
+
             if (window.msgUnsub) window.msgUnsub();
             window.msgUnsub = onSnapshot(collection(db, ROOT, "channels", "list", id, "messages"), (s) => {
                 const msgs = s.docs.map(d => ({msgId: d.id, ...d.data()})).sort((a,b) => (a.time?.seconds||0)-(b.time?.seconds||0));
@@ -239,6 +266,10 @@
                 msgs.forEach(m => processView(id, m.msgId, m.sender));
             });
             renderChannels();
+        };
+
+        window.goBack = () => {
+            document.getElementById('appSidebar').classList.remove('hidden-mobile');
         };
 
         async function processView(channelId, msgId, sender) {
@@ -301,7 +332,6 @@
             } else {
                 const snap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
                 if (!snap.empty) return showToast("Ссылка занята");
-                // При создании владелец сразу подписчик (1 подп.)
                 const ref = await addDoc(collection(db, ROOT, "channels", "list"), { 
                     name, link, owner: user, subscribers: [user] 
                 });
@@ -337,9 +367,7 @@
 
         window.toggleJoin = async () => {
             if (!activeId || !user) return;
-            // Добавляем в список подписок пользователя
             await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(activeId) });
-            // Добавляем пользователя в список подписчиков канала
             await updateDoc(doc(db, ROOT, "channels", "list", activeId), { subscribers: arrayUnion(user) });
             showToast("Вы вступили в канал!");
         };
