@@ -117,7 +117,9 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button id="leaveChannelBtn" onclick="leaveCurrentChannel()" class="hidden text-[10px] md:text-xs bg-red-50 px-3 py-1.5 rounded-lg font-bold text-red-500 active:bg-red-100 transition-colors">Выйти</button>
+                    <button id="leaveChannelBtn" onclick="leaveCurrentChannel()" class="hidden p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors btn-animate" title="Выйти из канала">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    </button>
                     <button id="editChannelBtn" onclick="openEditModal()" class="hidden text-[10px] md:text-xs bg-gray-100 px-3 py-1.5 rounded-lg font-bold text-gray-600 active:bg-gray-200 transition-colors">Ред.</button>
                 </div>
             </header>
@@ -485,6 +487,30 @@
             await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayUnion(user) });
             showToast("Вы подписались!");
             updateUI();
+        };
+
+        window.leaveCurrentChannel = async () => {
+            if (!activeChat || activeChat.type !== 'channel') return;
+            const channelId = activeChat.id;
+            
+            // Удаляем из подписок пользователя
+            await updateDoc(doc(db, ROOT, "users", "list", user), {
+                subs: arrayRemove(channelId)
+            });
+            
+            // Удаляем пользователя из подписчиков канала
+            await updateDoc(doc(db, ROOT, "channels", "list", channelId), {
+                subscribers: arrayRemove(user)
+            });
+
+            showToast("Вы вышли из канала");
+            
+            // Сбрасываем вид
+            activeChat = null;
+            document.getElementById('activeChannelContent').classList.add('hidden');
+            document.getElementById('noChannelView').classList.remove('hidden');
+            if (window.innerWidth <= 768) goBack();
+            renderChatList();
         };
 
         window.openEditModal = () => {
