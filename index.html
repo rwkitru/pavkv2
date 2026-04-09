@@ -283,10 +283,12 @@
                 if (snap.exists()) return showToast("Ник занят");
                 
                 // --- ЛИМИТ: 1 аккаунт на устройство ---
-                let localAccounts = JSON.parse(localStorage.getItem('pnavkv2_created_accounts') || "[]");
-                if (localAccounts.length >= 1 && !localAccounts.includes(nameInput)) {
-                    return showToast("Лимит: 1 аккаунт на устройство");
-                }
+let localAccounts = JSON.parse(localStorage.getItem('pnavkv2_created_accounts') || "[]");
+
+// И меняешь число в условии (было 1, станет 2):
+if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) {
+    return showToast("Лимит: 2 аккаунта на устройство");
+}
                 // --------------------------------------
 
                 await setDoc(uRef, { username: nameInput, password: pass, subs: [], type: 'user', last_active: serverTimestamp() });
