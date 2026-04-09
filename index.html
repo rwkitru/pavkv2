@@ -238,10 +238,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // --- ПЕРЕВОД НА V8 ---
         const ROOT = "pnavkv2_v8"; 
         const APP_VERSION = "8.0";
-        // ---------------------
 
         const ID_REGEX = /^[a-z_][a-z0-9_]{3,11}$/;
         const VERIFIED_HTML = `<span class="verified-badge" title="Подтвержденный аккаунт"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>`;
@@ -258,12 +256,11 @@
         let lastRenderedChatIds = "";
 
         const initAuth = async () => {
-          // ПРИНУДИТЕЛЬНЫЙ ВЫБРОС НА РЕГИСТРАЦИЮ
           const currentVersion = localStorage.getItem('pnavkv2_app_version');
           if (currentVersion !== APP_VERSION) {
-              localStorage.clear(); // Полная очистка
+              localStorage.clear();
               localStorage.setItem('pnavkv2_app_version', APP_VERSION);
-              location.reload(); // Перезагрузка для применения очистки
+              location.reload();
               return;
           }
 
@@ -391,7 +388,7 @@
         window.renderChatList = () => {
             const list = document.getElementById('chatListArea');
             const searchInput = document.getElementById('searchInput');
-            if (!searchInput) return;
+            if (!searchInput || !list) return;
             const search = searchInput.value.toLowerCase().replace('@', '');
             let items = (search.length > 0) 
                 ? [...channels.filter(c => c.name.toLowerCase().includes(search) || c.link.includes(search)), ...allUsers.filter(u => u.username.includes(search) && u.username !== user)]
@@ -445,10 +442,8 @@
             if(activeChat?.id === id) return;
             const c = channels.find(x => x.id === id);
             activeChat = { id, type: 'channel', data: c };
-            
             lastMessagesData = []; 
             document.getElementById('messagesArea').innerHTML = '';
-            
             updateUI();
             updateDoc(doc(db, ROOT, "channels", "list", id), { viewedBy: arrayUnion(user) });
             subscribeToMessages(collection(db, ROOT, "channels", "list", id, "messages"));
@@ -458,10 +453,8 @@
             const chatId = [user, targetUser].sort().join("_v_");
             if(activeChat?.id === chatId) return;
             activeChat = { id: chatId, type: 'direct', targetUser };
-            
             lastMessagesData = [];
             document.getElementById('messagesArea').innerHTML = '';
-            
             updateUI();
             const chatRef = doc(db, ROOT, "direct_chats", "list", chatId);
             const chatSnap = await getDoc(chatRef);
@@ -472,7 +465,6 @@
 
         function subscribeToMessages(colRef) {
             if (window.msgUnsub) window.msgUnsub();
-            // ИСПРАВЛЕНИЕ: добавлена опция includeMetadataChanges и serverTimestamps: 'estimate'
             window.msgUnsub = onSnapshot(colRef, { includeMetadataChanges: true }, (s) => {
                 const msgs = s.docs.map(d => ({id: d.id, ...d.data({ serverTimestamps: 'estimate' })}));
                 renderMessages(msgs);
@@ -498,6 +490,7 @@
         let lastMessagesData = []; 
         function renderMessages(msgs) {
             const area = document.getElementById('messagesArea');
+            if (!area) return;
             if (msgs.length === 0) {
                 area.innerHTML = '';
                 lastMessagesData = [];
@@ -510,7 +503,6 @@
                 return timeA - timeB;
             });
 
-            // ИСПРАВЛЕНИЕ: Добавлено сравнение времени последнего сообщения, чтобы перерисовывать при получении серверной метки
             const lastMsgA = sortedMsgs[sortedMsgs.length - 1];
             const lastMsgB = lastMessagesData[lastMessagesData.length - 1];
             const timeChanged = lastMsgA?.time?.toMillis() !== lastMsgB?.time?.toMillis();
@@ -703,7 +695,7 @@
         function getHashColor(s) { 
             const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; 
             let h = 0; for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); 
-            return c[Micro.abs(h) % c.length]; 
+            return c[Math.abs(h) % c.length]; 
         }
         document.getElementById('msgInput').addEventListener('keypress', e => e.key === 'Enter' && sendMessage());
     </script>
