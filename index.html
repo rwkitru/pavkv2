@@ -27,7 +27,6 @@
         
         .avatar { width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
         
-        /* Индикатор непрочитанного сообщения */
         .unread-badge { width: 10px; height: 10px; background: #3b82f6; border-radius: 50%; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
 
         .message-bubble { position: relative; max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); align-self: flex-start; animation: slideIn 0.3s ease-out; }
@@ -186,7 +185,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // КОРНЕВОЙ ПУТЬ БАЗЫ ДАННЫХ (смена v3 на v4 обнуляет данные для текущего клиента)
         const ROOT = "pnavkv2_v4";
 
         let user = null;
@@ -201,7 +199,6 @@
         let unreadStates = {}; 
 
         const savedUser = localStorage.getItem('pnavkv2_user');
-        // Очищаем локальное хранилище при смене версии, чтобы не было конфликтов
         if (savedUser && !localStorage.getItem('pnavkv2_v4_flag')) {
             localStorage.clear();
             localStorage.setItem('pnavkv2_v4_flag', 'true');
@@ -250,6 +247,24 @@
             }
         };
 
+        function updateLastActive() {
+            if (!user) return;
+            updateDoc(doc(db, ROOT, "users", "list", user), { last_active: serverTimestamp() });
+        }
+
+        function formatStatus(lastActive) {
+            if (!lastActive) return "Неизвестно";
+            const now = Date.now();
+            const last = lastActive.seconds * 1000;
+            const diff = now - last;
+            
+            // Если активность была меньше минуты назад — "В сети"
+            if (diff < 60000) return "В сети";
+            
+            const date = new Date(last);
+            return `Был(а) в сети в ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+        }
+
         function loginAs(name) {
             user = name;
             localStorage.setItem('pnavkv2_user', name);
@@ -261,6 +276,10 @@
             document.getElementById('chatView').style.display = 'flex';
             document.getElementById('myUsername').textContent = '@' + name;
             
+            // Обновляем активность при логине и каждые 30 сек
+            updateLastActive();
+            setInterval(updateLastActive, 30000);
+
             onSnapshot(collection(db, ROOT, "direct_chats", "list"), (s) => {
                 directChatsWithActivity = s.docs
                     .filter(d => d.id.includes(user))
@@ -269,8 +288,6 @@
                         const other = parts.find(p => p !== user);
                         const data = d.data();
                         lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
-                        
-                        // Баг исправлен: проверка unread только если не мы авторы
                         unreadStates[d.id] = data.last_msg_by && data.last_msg_by !== user && 
                                             (!data.viewedBy || !data.viewedBy.includes(user));
                         
@@ -287,11 +304,8 @@
                 channels = s.docs.map(d => {
                     const data = d.data();
                     lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
-                    
-                    // Баг исправлен: проверка unread только если не мы авторы
                     unreadStates[d.id] = data.last_msg_by && data.last_msg_by !== user && 
                                         (!data.viewedBy || !data.viewedBy.includes(user));
-                                        
                     return { id: d.id, ...data, type: 'channel' };
                 });
                 renderChatList();
@@ -300,6 +314,8 @@
             onSnapshot(collection(db, ROOT, "users", "list"), (s) => {
                 allUsers = s.docs.map(d => ({ id: d.id, ...d.data(), type: 'user' }));
                 renderChatList();
+                // Обновляем UI чата, если открыт личный диалог
+                if (activeChat && activeChat.type === 'direct') updateUI();
             });
         }
 
@@ -331,9 +347,15 @@
                 const isChannel = item.type === 'channel';
                 const chatId = isChannel ? item.id : (item.id || [user, item.username].sort().join("_v_"));
                 const displayName = isChannel ? item.name : `@${item.username}`;
-                const subtext = isChannel ? `@${item.link}` : 'Личная переписка';
                 
-                // Синий кружок уведомления (скрыт если чат активен)
+                let subtext = "";
+                if (isChannel) {
+                    subtext = `@${item.link}`;
+                } else {
+                    const userData = allUsers.find(u => u.username === item.username);
+                    subtext = formatStatus(userData?.last_active);
+                }
+                
                 const isUnread = unreadStates[chatId] && activeChat?.id !== chatId;
 
                 const div = document.createElement('div');
@@ -343,7 +365,7 @@
                     <div class="avatar shadow-sm" style="background:${getHashColor(displayName)}">${(isChannel ? item.name : item.username)[0].toUpperCase()}</div>
                     <div class="flex-1 overflow-hidden">
                         <div class="font-bold truncate text-gray-800">${displayName}</div>
-                        <p class="text-xs text-gray-400 truncate">${subtext}</p>
+                        <p class="text-[11px] ${subtext === 'В сети' ? 'text-blue-500 font-medium' : 'text-gray-400'} truncate">${subtext}</p>
                     </div>
                     ${isUnread ? '<div class="unread-badge"></div>' : ''}`;
                 list.appendChild(div);
@@ -355,7 +377,6 @@
             activeChat = { id, type: 'channel', data: c };
             updateUI();
             
-            // Баг исправлен: сбрасываем непрочитанное сразу
             unreadStates[id] = false;
             const metaPath = doc(db, ROOT, "channels", "list", id);
             updateDoc(metaPath, { viewedBy: arrayUnion(user) });
@@ -368,7 +389,6 @@
             activeChat = { id: chatId, type: 'direct', targetUser };
             updateUI();
             
-            // Баг исправлен: сбрасываем непрочитанное сразу
             unreadStates[chatId] = false;
             const metaPath = doc(db, ROOT, "direct_chats", "list", chatId);
             updateDoc(metaPath, { viewedBy: arrayUnion(user) });
@@ -386,7 +406,6 @@
                 renderMessages(msgs);
                 area.style.opacity = '1';
                 
-                // Помечаем все сообщения в текущем открытом чате как прочитанные в реальном времени
                 msgs.forEach(m => {
                     if(m.sender !== user && (!m.viewedBy || !m.viewedBy.includes(user))) {
                         updateDoc(doc(colRef, m.id), { viewedBy: arrayUnion(user) });
@@ -452,6 +471,8 @@
                 last_msg_by: user,
                 viewedBy: [user] 
             }, { merge: true });
+            
+            updateLastActive();
         };
 
         function updateUI() {
@@ -493,9 +514,13 @@
                 }
             } else {
                 headerTitle.textContent = `@${activeChat.targetUser}`;
-                headerMeta.textContent = `Личный чат`;
                 avatar.textContent = activeChat.targetUser[0].toUpperCase();
                 avatar.style.background = getHashColor(activeChat.targetUser);
+                
+                const userData = allUsers.find(u => u.username === activeChat.targetUser);
+                const status = formatStatus(userData?.last_active);
+                headerMeta.textContent = status;
+                headerMeta.className = `text-[10px] md:text-xs truncate ${status === 'В сети' ? 'text-blue-500 font-bold' : 'text-gray-400'}`;
                 
                 document.getElementById('editChannelBtn').classList.add('hidden');
                 document.getElementById('leaveChannelBtn').classList.add('hidden');
@@ -591,9 +616,12 @@
             document.getElementById('profAvatar').style.background = getHashColor(isChan ? activeChat.data.name : activeChat.targetUser);
             
             const meta = document.getElementById('profMeta');
-            meta.innerHTML = isChan 
-                ? `<p class="text-sm">Владелец: @${activeChat.data.owner}</p><p class="text-sm">Подписчиков: ${activeChat.data.subscribers?.length || 0}</p>`
-                : `<p class="text-sm">Личный чат защищен pnavkv2.</p>`;
+            if (isChan) {
+                meta.innerHTML = `<p class="text-sm">Владелец: @${activeChat.data.owner}</p><p class="text-sm">Подписчиков: ${activeChat.data.subscribers?.length || 0}</p>`;
+            } else {
+                const userData = allUsers.find(u => u.username === activeChat.targetUser);
+                meta.innerHTML = `<p class="text-sm">${formatStatus(userData?.last_active)}</p><p class="text-xs text-gray-400 mt-2">Личный чат защищен pnavkv2.</p>`;
+            }
             
             document.getElementById('profileModal').style.display = 'flex';
         };
