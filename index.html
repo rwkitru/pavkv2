@@ -681,10 +681,11 @@ if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) {
 
         window.goBack = () => document.getElementById('appSidebar').classList.remove('hidden-mobile');
         
-        window.logout = () => { 
-            localStorage.clear(); 
-            location.reload(); 
-        };
+window.logout = () => { 
+    // Вместо clear() удаляем только данные текущего входа
+    localStorage.removeItem('pnavkv2_user'); 
+    location.reload(); 
+};
 
         function showToast(t) { 
             const el = document.getElementById('toast'); 
