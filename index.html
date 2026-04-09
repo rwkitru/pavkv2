@@ -27,7 +27,7 @@
         
         .avatar { width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
         
-        .unread-badge { width: 10px; height: 10px; background: #3b82f6; border-radius: 50%; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+        .unread-badge { width: 12px; height: 12px; background: #3b82f6; border-radius: 50%; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); border: 2px solid white; }
 
         .message-bubble { position: relative; max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); align-self: flex-start; animation: slideIn 0.3s ease-out; }
         .message-bubble.mine { background: #3b82f6; color: white; border-bottom-left-radius: 18px; border-bottom-right-radius: 4px; align-self: flex-end; animation: slideInRight 0.3s ease-out; }
@@ -73,7 +73,6 @@
                 max-height: 300px;
             }
         }
-        /* Стиль для галочки */
         .verified-badge {
             display: inline-flex;
             align-items: center;
@@ -239,7 +238,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        const ROOT = "pnavkv2_v7"; // ОБНОВЛЕННАЯ БАЗА
+        const ROOT = "pnavkv2_v7"; 
         const ID_REGEX = /^[a-z_][a-z0-9_]{3,11}$/;
         const VERIFIED_HTML = `<span class="verified-badge" title="Подтвержденный аккаунт"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>`;
 
@@ -395,8 +394,13 @@
                 ? [...channels.filter(c => c.name.toLowerCase().includes(search) || c.link.includes(search)), ...allUsers.filter(u => u.username.includes(search) && u.username !== user)]
                 : [...channels.filter(c => c.owner === user || mySubs.includes(c.id)), ...directChatsWithActivity];
 
+            // Удаляем дубликаты и сортируем по времени последнего сообщения (самые новые сверху)
             const unique = Array.from(new Map(items.map(i => [i.id || i.username, i])).values())
-                .sort((a, b) => (lastMessageTimestamps[b.id || [user, b.username].sort().join("_v_")] || 0) - (lastMessageTimestamps[a.id || [user, a.username].sort().join("_v_")] || 0));
+                .sort((a, b) => {
+                    const idA = a.id || [user, a.username].sort().join("_v_");
+                    const idB = b.id || [user, b.username].sort().join("_v_");
+                    return (lastMessageTimestamps[idB] || 0) - (lastMessageTimestamps[idA] || 0);
+                });
 
             unique.forEach(item => {
                 const isChan = item.type === 'channel';
@@ -425,6 +429,7 @@
             const c = channels.find(x => x.id === id);
             activeChat = { id, type: 'channel', data: c };
             updateUI();
+            // Сбрасываем непрочитанное состояние при открытии
             updateDoc(doc(db, ROOT, "channels", "list", id), { viewedBy: arrayUnion(user) });
             subscribeToMessages(collection(db, ROOT, "channels", "list", id, "messages"));
         };
@@ -440,6 +445,7 @@
                 await setDoc(chatRef, { members: [user, targetUser], last_msg_time: serverTimestamp() });
             }
 
+            // Сбрасываем непрочитанное состояние при открытии
             updateDoc(chatRef, { viewedBy: arrayUnion(user) });
             subscribeToMessages(collection(db, ROOT, "direct_chats", "list", chatId, "messages"));
         };
@@ -447,17 +453,16 @@
         function subscribeToMessages(colRef) {
             if (window.msgUnsub) window.msgUnsub();
             window.msgUnsub = onSnapshot(colRef, (s) => {
-                const msgs = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.time?.toMillis() || 0) - (b.time?.toMillis() || 0));
+                const msgs = s.docs.map(d => ({id: d.id, ...d.data()}));
                 renderMessages(msgs);
                 
                 if (activeChat.type === 'channel') {
                     const cooldowns = JSON.parse(localStorage.getItem('pnavkv2_view_cooldowns') || "{}");
                     const now = Date.now();
                     msgs.forEach(m => {
-                        const lastView = cooldowns[m.id] || 0;
-                        if (now - lastView > 300000) {
+                        const lastView = cooldowns[m.id];
+                        if (!lastView || (now - lastView > 300000)) {
                             updateDoc(doc(db, ROOT, "channels", "list", activeChat.id, "messages", m.id), { 
-                                viewedBy: arrayUnion(user),
                                 viewCount: increment(1) 
                             });
                             cooldowns[m.id] = now;
@@ -473,7 +478,14 @@
         function renderMessages(msgs) {
             const area = document.getElementById('messagesArea');
             area.innerHTML = '';
-            msgs.forEach(m => {
+            
+            const sortedMsgs = [...msgs].sort((a, b) => {
+                const timeA = a.time?.toMillis() || Date.now() + 10000;
+                const timeB = b.time?.toMillis() || Date.now() + 10000;
+                return timeA - timeB;
+            });
+
+            sortedMsgs.forEach(m => {
                 const isMine = m.sender === user;
                 const senderData = allUsers.find(u => u.username === m.sender);
                 const isVerified = senderData?.isVerified;
@@ -488,7 +500,7 @@
                     ${!isMine && activeChat.type === 'channel' ? `<div class="text-[10px] font-bold text-blue-600 mb-1 flex items-center">@${m.sender} ${isVerified ? VERIFIED_HTML : ''}</div>` : ''}
                     ${contentHTML}
                     <div class="flex items-center justify-end gap-2 mt-1">
-                        ${activeChat.type === 'channel' ? `<div class="views-badge"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg><span>${m.viewCount || (m.viewedBy?.length || 0)}</span></div>` : ''}
+                        ${activeChat.type === 'channel' ? `<div class="views-badge"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg><span>${m.viewCount || 0}</span></div>` : ''}
                         <div class="text-[9px] ${isMine ? 'text-blue-100' : 'text-gray-400'}">${m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...'}</div>
                     </div>`;
                 area.appendChild(div);
@@ -512,12 +524,24 @@
             input.value = '';
             const isChan = currentChat.type === 'channel';
             const colPath = isChan ? "channels" : "direct_chats";
-            const msgData = { sender: user, time: serverTimestamp(), viewedBy: [user], viewCount: isChan ? 1 : 0 };
+            const msgData = { sender: user, time: serverTimestamp(), viewCount: isChan ? 1 : 0 };
             if (text) msgData.text = text;
             if (imgData) msgData.image = imgData;
             try {
                 const ref = await addDoc(collection(db, ROOT, colPath, "list", currentChat.id, "messages"), msgData);
-                await setDoc(doc(db, ROOT, colPath, "list", currentChat.id), { last_msg_time: serverTimestamp(), last_msg_by: user, viewedBy: [user] }, { merge: true });
+                
+                if (isChan) {
+                    const cooldowns = JSON.parse(localStorage.getItem('pnavkv2_view_cooldowns') || "{}");
+                    cooldowns[ref.id] = Date.now();
+                    localStorage.setItem('pnavkv2_view_cooldowns', JSON.stringify(cooldowns));
+                }
+
+                // Обновляем время последнего сообщения и сбрасываем список прочитавших (оставляем только себя)
+                await setDoc(doc(db, ROOT, colPath, "list", currentChat.id), { 
+                    last_msg_time: serverTimestamp(), 
+                    last_msg_by: user, 
+                    viewedBy: [user] 
+                }, { merge: true });
             } catch (e) { showToast("Ошибка отправки"); }
         };
 
@@ -587,7 +611,7 @@
             }
             const meta = document.getElementById('profMeta');
             if (isChan) meta.innerHTML = `<p class="text-sm">Владелец: <b>@${c.owner}</b></p><p class="text-sm">Создан: ${c.last_msg_time ? new Date(c.last_msg_time.seconds * 1000).toLocaleDateString() : 'недавно'}</p>`;
-            else meta.innerHTML = `<p class="text-sm">${formatStatus(userData?.last_active)}</p><p class="text-xs text-gray-400 mt-2">Личный чат v7.</p>`;
+            else meta.innerHTML = `<p class="text-sm">${formatStatus(userData?.last_active)}</p><p class="text-xs text-gray-400 mt-2">Личный чат</p>`;
         }
 
         window.banUser = async (targetId) => {
