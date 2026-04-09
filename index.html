@@ -282,17 +282,16 @@
             if (authMode === 'register') {
                 if (snap.exists()) return showToast("Ник занят");
                 
-                // --- ЛИМИТ: 1 аккаунт на устройство ---
-let localAccounts = JSON.parse(localStorage.getItem('pnavkv2_created_accounts') || "[]");
-
-// И меняешь число в условии (было 1, станет 2):
-if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) {
-    return showToast("Лимит: 2 аккаунта на устройство");
-}
-                // --------------------------------------
+                // --- ЗАЩИЩЕННЫЙ ЛИМИТ: 2 аккаунта на устройство ---
+                let localAccounts = JSON.parse(localStorage.getItem('pnavkv2_created_accounts') || "[]");
+                if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) {
+                    return showToast("Лимит: 2 аккаунта на устройство");
+                }
+                // --------------------------------------------------
 
                 await setDoc(uRef, { username: nameInput, password: pass, subs: [], type: 'user', last_active: serverTimestamp() });
                 
+                // Сохраняем имя сразу после успешного создания
                 if (!localAccounts.includes(nameInput)) {
                     localAccounts.push(nameInput);
                     localStorage.setItem('pnavkv2_created_accounts', JSON.stringify(localAccounts));
@@ -435,7 +434,6 @@ if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) {
                 const msgs = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.time?.toMillis() || 0) - (b.time?.toMillis() || 0));
                 renderMessages(msgs);
                 
-                // --- ЛОГИКА ПРОСМОТРОВ С КУЛДАУНОМ ---
                 if (activeChat.type === 'channel') {
                     const cooldowns = JSON.parse(localStorage.getItem('pnavkv2_view_cooldowns') || "{}");
                     const now = Date.now();
@@ -454,7 +452,6 @@ if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) {
                     });
                     localStorage.setItem('pnavkv2_view_cooldowns', JSON.stringify(cooldowns));
                 }
-                // -------------------------------------
             });
             if (window.innerWidth <= 768) document.getElementById('appSidebar').classList.add('hidden-mobile');
             renderChatList();
@@ -518,7 +515,7 @@ if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) {
                 sender: user, 
                 time: serverTimestamp(), 
                 viewedBy: [user],
-                viewCount: isChan ? 1 : 0 // Сразу 1 просмотр при создании в канале
+                viewCount: isChan ? 1 : 0 
             };
             if (text) msgData.text = text;
             if (imgData) msgData.image = imgData;
@@ -526,7 +523,6 @@ if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) {
             try {
                 const newMsgRef = await addDoc(msgCol, msgData);
                 
-                // Установка кулдауна для создателя, чтобы он не накрутил себе сразу +1 просмотр через subscribe
                 if(isChan) {
                     const cooldowns = JSON.parse(localStorage.getItem('pnavkv2_view_cooldowns') || "{}");
                     cooldowns[newMsgRef.id] = Date.now();
@@ -681,11 +677,11 @@ if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) {
 
         window.goBack = () => document.getElementById('appSidebar').classList.remove('hidden-mobile');
         
-window.logout = () => { 
-    // Вместо clear() удаляем только данные текущего входа
-    localStorage.removeItem('pnavkv2_user'); 
-    location.reload(); 
-};
+        window.logout = () => { 
+            // Защищенный выход: удаляем только текущего пользователя, сохраняя счетчик аккаунтов устройства
+            localStorage.removeItem('pnavkv2_user'); 
+            location.reload(); 
+        };
 
         function showToast(t) { 
             const el = document.getElementById('toast'); 
