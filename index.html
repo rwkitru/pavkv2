@@ -21,14 +21,14 @@
             .main-content { width: 100vw; height: 100%; }
         }
 
-        .chat-item { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border-radius: 12px; margin: 4px 8px; padding: 12px; display: flex; align-items: center; gap: 12px; }
+        .chat-item { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border-radius: 12px; margin: 4px 8px; padding: 12px; display: flex; align-items: center; gap: 12px; position: relative; }
         .chat-item:hover { background: #f1f5f9; transform: translateX(4px); }
-        .chat-item:active { transform: scale(0.98); }
         .chat-item.active { background: #eff6ff; }
         
-        .avatar { width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; transition: transform 0.3s ease; }
-        .chat-item:hover .avatar { transform: scale(1.05); }
+        .avatar { width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
         
+        .unread-badge { width: 10px; height: 10px; background: #3b82f6; border-radius: 50%; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+
         .message-bubble { position: relative; max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); align-self: flex-start; animation: slideIn 0.3s ease-out; }
         .message-bubble.mine { background: #3b82f6; color: white; border-bottom-left-radius: 18px; border-bottom-right-radius: 4px; align-self: flex-end; animation: slideInRight 0.3s ease-out; }
         
@@ -41,7 +41,8 @@
         #messagesArea { scroll-behavior: smooth; background: #e5ddd5; background-image: radial-gradient(#d1d1d1 0.5px, transparent 0); background-size: 20px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; transition: all 0.3s ease; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(8px); padding: 20px; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .custom-alert { position: fixed; top: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px; z-index: 1000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
 
         #searchContainer { display: flex; align-items: center; background: #f1f5f9; border-radius: 10px; width: 40px; height: 40px; overflow: hidden; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
         #searchContainer.expanded { width: 220px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
@@ -50,8 +51,6 @@
 
         .btn-animate { transition: all 0.2s ease; }
         .btn-animate:active { transform: scale(0.9); }
-        
-        #chatFooter { flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 12px); min-height: 70px; transition: height 0.3s ease; }
     </style>
 </head>
 <body class="flex">
@@ -60,9 +59,9 @@
     <div id="authScreen" class="fixed inset-0 bg-[#f4f7fa] z-[200] flex items-center justify-center p-4 transition-opacity duration-500">
         <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl w-full max-w-md transform transition-all duration-500 scale-100">
             <h1 class="text-2xl font-bold text-center mb-2" id="authTitle">Регистрация</h1>
-            <p class="text-gray-400 text-center mb-8 text-sm" id="authSubtitle">Создайте аккаунт pnavkv2</p>
+            <p class="text-gray-400 text-center mb-8 text-sm" id="authSubtitle">Латиница, 4-12 симв., без цифр в начале</p>
             <div class="space-y-4">
-                <input type="text" id="authUsername" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none transition-all focus:border-blue-400 focus:bg-white" placeholder="Никнейм (4-12 симв)">
+                <input type="text" id="authUsername" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none transition-all focus:border-blue-400 focus:bg-white" placeholder="Никнейм">
                 <input type="password" id="authPassword" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none transition-all focus:border-blue-400 focus:bg-white" placeholder="Пароль">
                 <button onclick="handleAuth()" id="mainAuthBtn" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all btn-animate">
                     <span id="authBtnText">Зарегистрироваться</span>
@@ -133,7 +132,7 @@
                 </div>
                 <div id="subscriberControls" class="hidden flex flex-col items-center justify-center w-full">
                     <button id="joinBtn" onclick="toggleJoin()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold btn-animate shadow-sm text-sm">Вступить в канал</button>
-                    <p id="joinedLabel" class="hidden text-gray-400 text-sm font-medium py-2">Вы подписаны</p>
+                    <p id="joinedLabel" class="hidden text-gray-500 text-sm font-bold py-2">Вы подписаны (Только чтение)</p>
                 </div>
             </footer>
         </div>
@@ -192,6 +191,8 @@
         let activeChat = null;
         let authMode = 'register';
         let directChatsWithActivity = [];
+        let editingChannelId = null;
+        let lastMessageTimestamps = {};
 
         const savedUser = localStorage.getItem('pnavkv2_user');
         if (savedUser) loginAs(savedUser);
@@ -199,14 +200,33 @@
 
         window.toggleAuthMode = () => {
             authMode = authMode === 'register' ? 'login' : 'register';
-            document.getElementById('authTitle').textContent = authMode === 'login' ? 'Вход' : 'Регистрация';
-            document.getElementById('authBtnText').textContent = authMode === 'login' ? 'Войти' : 'Зарегистрироваться';
+            
+            // Сбрасываем поля при переключении
+            document.getElementById('authUsername').value = "";
+            document.getElementById('authPassword').value = "";
+
+            if (authMode === 'login') {
+                document.getElementById('authTitle').textContent = 'Вход';
+                document.getElementById('authBtnText').textContent = 'Войти';
+                document.getElementById('authSubtitle').textContent = 'Введите свои данные';
+                document.getElementById('toggleAuthBtn').textContent = 'Нету аккаунта? Зарегистрироваться';
+            } else {
+                document.getElementById('authTitle').textContent = 'Регистрация';
+                document.getElementById('authBtnText').textContent = 'Зарегистрироваться';
+                document.getElementById('authSubtitle').textContent = 'Латиница, 4-12 симв., без цифр в начале';
+                document.getElementById('toggleAuthBtn').textContent = 'Уже есть аккаунт? Войти';
+            }
         };
 
         window.handleAuth = async () => {
             const name = document.getElementById('authUsername').value.trim().toLowerCase().replace('@', '');
             const pass = document.getElementById('authPassword').value;
-            if (name.length < 4) return showToast("Минимум 4 символа");
+
+            const userRegex = /^[a-z_][a-z0-9_]{3,11}$/;
+            if (!userRegex.test(name)) {
+                return showToast("Некорректный никнейм (см. правила)");
+            }
+            if (pass.length < 4) return showToast("Короткий пароль");
             
             const uRef = doc(db, ROOT, "users", "list", name);
             const snap = await getDoc(uRef);
@@ -236,7 +256,9 @@
                     .map(d => {
                         const parts = d.id.split("_v_");
                         const other = parts.find(p => p !== user);
-                        return { id: d.id, type: 'direct', username: other };
+                        const data = d.data();
+                        lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
+                        return { id: d.id, type: 'direct', username: other, lastTime: data.last_msg_time?.seconds || 0, lastBy: data.last_msg_by };
                     });
                 renderChatList();
             });
@@ -246,7 +268,11 @@
             });
 
             onSnapshot(collection(db, ROOT, "channels", "list"), (s) => {
-                channels = s.docs.map(d => ({ id: d.id, ...d.data(), type: 'channel' }));
+                channels = s.docs.map(d => {
+                    const data = d.data();
+                    lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
+                    return { id: d.id, ...data, type: 'channel' };
+                });
                 renderChatList();
             });
 
@@ -258,12 +284,14 @@
 
         window.renderChatList = () => {
             const list = document.getElementById('chatListArea');
-            const search = document.getElementById('searchInput').value.toLowerCase().replace('@', '');
+            const searchInput = document.getElementById('searchInput');
+            if (!searchInput) return;
+            const search = searchInput.value.toLowerCase().replace('@', '');
             list.innerHTML = '';
 
             let items = [];
             if (search.length > 0) {
-                const filteredChannels = channels.filter(c => c.name.toLowerCase().includes(search) || c.link.includes(search));
+                const filteredChannels = channels.filter(c => c.name.toLowerCase().includes(search) || (c.link && c.link.includes(search)));
                 const filteredUsers = allUsers.filter(u => u.username.toLowerCase().includes(search) && u.username !== user);
                 items = [...filteredChannels, ...filteredUsers];
             } else {
@@ -272,21 +300,30 @@
             }
 
             const uniqueItems = Array.from(new Map(items.map(i => [i.id || i.username, i])).values());
+            uniqueItems.sort((a, b) => {
+                const timeA = lastMessageTimestamps[a.id || [user, a.username].sort().join("_v_")] || 0;
+                const timeB = lastMessageTimestamps[b.id || [user, b.username].sort().join("_v_")] || 0;
+                return timeB - timeA;
+            });
 
             uniqueItems.forEach(item => {
                 const isChannel = item.type === 'channel';
+                const chatId = isChannel ? item.id : (item.id || [user, item.username].sort().join("_v_"));
                 const displayName = isChannel ? item.name : `@${item.username}`;
                 const subtext = isChannel ? `@${item.link}` : 'Личная переписка';
                 
+                const isUnread = activeChat?.id !== chatId && item.lastBy && item.lastBy !== user;
+
                 const div = document.createElement('div');
-                div.className = `chat-item ${activeChat?.id === (item.id || item.username) ? 'active' : ''}`;
+                div.className = `chat-item ${activeChat?.id === chatId ? 'active' : ''}`;
                 div.onclick = () => isChannel ? selectChannel(item.id) : selectUser(item.username);
                 div.innerHTML = `
                     <div class="avatar shadow-sm" style="background:${getHashColor(displayName)}">${(isChannel ? item.name : item.username)[0].toUpperCase()}</div>
                     <div class="flex-1 overflow-hidden">
                         <div class="font-bold truncate text-gray-800">${displayName}</div>
                         <p class="text-xs text-gray-400 truncate">${subtext}</p>
-                    </div>`;
+                    </div>
+                    ${isUnread ? '<div class="unread-badge"></div>' : ''}`;
                 list.appendChild(div);
             });
         };
@@ -301,7 +338,6 @@
         window.selectUser = async (targetUser) => {
             const chatId = [user, targetUser].sort().join("_v_");
             activeChat = { id: chatId, type: 'direct', targetUser };
-            await setDoc(doc(db, ROOT, "direct_chats", "list", chatId), { last_msg_time: serverTimestamp() }, { merge: true });
             updateUI();
             subscribeToMessages(collection(db, ROOT, "direct_chats", "list", chatId, "messages"));
         };
@@ -316,7 +352,6 @@
                 renderMessages(msgs);
                 area.style.opacity = '1';
                 
-                // Система просмотров: если это канал, отмечаем просмотр
                 if(activeChat.type === 'channel') {
                     msgs.forEach(m => {
                         if(m.sender !== user && (!m.viewedBy || !m.viewedBy.includes(user))) {
@@ -329,6 +364,7 @@
             if (window.innerWidth <= 768) {
                 document.getElementById('appSidebar').classList.add('hidden-mobile');
             }
+            renderChatList();
         }
 
         function renderMessages(msgs) {
@@ -373,9 +409,14 @@
                 text, sender: user, time: serverTimestamp(), viewedBy: [user]
             });
 
-            if(activeChat.type === 'direct') {
-                await updateDoc(doc(db, ROOT, "direct_chats", "list", activeChat.id), { last_msg_time: serverTimestamp() });
-            }
+            const metaPath = activeChat.type === 'channel'
+                ? doc(db, ROOT, "channels", "list", activeChat.id)
+                : doc(db, ROOT, "direct_chats", "list", activeChat.id);
+            
+            await setDoc(metaPath, { 
+                last_msg_time: serverTimestamp(), 
+                last_msg_by: user 
+            }, { merge: true });
         };
 
         function updateUI() {
@@ -396,10 +437,25 @@
                 
                 const isOwner = c.owner === user;
                 const subbed = mySubs.includes(activeChat.id);
+                
                 document.getElementById('editChannelBtn').classList.toggle('hidden', !isOwner);
                 document.getElementById('leaveChannelBtn').classList.toggle('hidden', isOwner || !subbed);
-                document.getElementById('messageControls').classList.toggle('hidden', !isOwner && !subbed);
-                document.getElementById('subscriberControls').classList.toggle('hidden', isOwner || subbed);
+                
+                if (isOwner) {
+                    document.getElementById('messageControls').classList.remove('hidden');
+                    document.getElementById('subscriberControls').classList.add('hidden');
+                } else {
+                    document.getElementById('messageControls').classList.add('hidden');
+                    document.getElementById('subscriberControls').classList.remove('hidden');
+                    
+                    if (subbed) {
+                        document.getElementById('joinBtn').classList.add('hidden');
+                        document.getElementById('joinedLabel').classList.remove('hidden');
+                    } else {
+                        document.getElementById('joinBtn').classList.remove('hidden');
+                        document.getElementById('joinedLabel').classList.add('hidden');
+                    }
+                }
             } else {
                 headerTitle.textContent = `@${activeChat.targetUser}`;
                 headerMeta.textContent = `Личный чат`;
@@ -421,25 +477,53 @@
             updateUI();
         };
 
+        window.openEditModal = () => {
+            if (activeChat.type !== 'channel') return;
+            editingChannelId = activeChat.id;
+            document.getElementById('modalTitle').textContent = "Редактировать канал";
+            document.getElementById('channelNameInput').value = activeChat.data.name;
+            document.getElementById('channelIdInput').value = activeChat.data.link;
+            document.getElementById('channelModal').style.display='flex';
+        };
+
         window.saveChannel = async () => {
             const name = document.getElementById('channelNameInput').value.trim();
             const link = document.getElementById('channelIdInput').value.trim().toLowerCase().replace('@', '');
             if (!name || !link) return;
-            
-            const snap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
-            if (!snap.empty) return showToast("ID занят");
-            
-            const ref = await addDoc(collection(db, ROOT, "channels", "list"), { 
-                name, link, owner: user, subscribers: [user] 
-            });
-            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(ref.id) });
+
+            if (editingChannelId) {
+                await updateDoc(doc(db, ROOT, "channels", "list", editingChannelId), { name, link });
+                showToast("Канал обновлен");
+                activeChat.data.name = name;
+                activeChat.data.link = link;
+                updateUI();
+            } else {
+                const snap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
+                if (!snap.empty) return showToast("ID занят");
+                
+                const ref = await addDoc(collection(db, ROOT, "channels", "list"), { 
+                    name, link, owner: user, subscribers: [user], last_msg_time: serverTimestamp() 
+                });
+                await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(ref.id) });
+                selectChannel(ref.id);
+            }
             closeChannelModal();
-            selectChannel(ref.id);
+        };
+
+        window.closeChannelModal = () => {
+            editingChannelId = null;
+            document.getElementById('modalTitle').textContent = "Создать канал";
+            document.getElementById('channelNameInput').value = "";
+            document.getElementById('channelIdInput').value = "";
+            document.getElementById('channelModal').style.display='none';
         };
 
         window.goBack = () => document.getElementById('appSidebar').classList.remove('hidden-mobile');
-        window.openCreateModal = () => document.getElementById('channelModal').style.display='flex';
-        window.closeChannelModal = () => document.getElementById('channelModal').style.display='none';
+        window.openCreateModal = () => {
+            editingChannelId = null;
+            document.getElementById('modalTitle').textContent = "Создать канал";
+            document.getElementById('channelModal').style.display='flex';
+        };
         window.logout = () => { localStorage.clear(); location.reload(); };
         
         window.openChannelProfile = () => {
@@ -453,13 +537,14 @@
             const meta = document.getElementById('profMeta');
             meta.innerHTML = isChan 
                 ? `<p class="text-sm">Владелец: @${activeChat.data.owner}</p><p class="text-sm">Подписчиков: ${activeChat.data.subscribers?.length || 0}</p>`
-                : `<p class="text-sm">Личный чат защищен сквозным шифрованием pnavkv2.</p>`;
+                : `<p class="text-sm">Личный чат защищен pnavkv2.</p>`;
             
             document.getElementById('profileModal').style.display = 'flex';
         };
 
         function showToast(t) { 
             const el = document.getElementById('toast'); 
+            if (!el) return;
             el.textContent = t; 
             el.style.opacity = '1'; 
             setTimeout(()=>el.style.opacity='0', 3000); 
