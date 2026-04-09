@@ -472,8 +472,9 @@
 
         function subscribeToMessages(colRef) {
             if (window.msgUnsub) window.msgUnsub();
-            window.msgUnsub = onSnapshot(colRef, (s) => {
-                const msgs = s.docs.map(d => ({id: d.id, ...d.data()}));
+            // ИСПРАВЛЕНИЕ: добавлена опция includeMetadataChanges и serverTimestamps: 'estimate'
+            window.msgUnsub = onSnapshot(colRef, { includeMetadataChanges: true }, (s) => {
+                const msgs = s.docs.map(d => ({id: d.id, ...d.data({ serverTimestamps: 'estimate' })}));
                 renderMessages(msgs);
                 if (activeChat.type === 'channel') {
                     const cooldowns = JSON.parse(localStorage.getItem('pnavkv2_view_cooldowns') || "{}");
@@ -509,7 +510,12 @@
                 return timeA - timeB;
             });
 
-            if (sortedMsgs.length !== lastMessagesData.length) {
+            // ИСПРАВЛЕНИЕ: Добавлено сравнение времени последнего сообщения, чтобы перерисовывать при получении серверной метки
+            const lastMsgA = sortedMsgs[sortedMsgs.length - 1];
+            const lastMsgB = lastMessagesData[lastMessagesData.length - 1];
+            const timeChanged = lastMsgA?.time?.toMillis() !== lastMsgB?.time?.toMillis();
+
+            if (sortedMsgs.length !== lastMessagesData.length || timeChanged) {
                 area.innerHTML = sortedMsgs.map(m => {
                     const isMine = m.sender === user;
                     const senderData = allUsers.find(u => u.username === m.sender);
@@ -697,7 +703,7 @@
         function getHashColor(s) { 
             const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; 
             let h = 0; for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); 
-            return c[Math.abs(h) % c.length]; 
+            return c[Micro.abs(h) % c.length]; 
         }
         document.getElementById('msgInput').addEventListener('keypress', e => e.key === 'Enter' && sendMessage());
     </script>
