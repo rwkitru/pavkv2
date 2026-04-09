@@ -93,7 +93,7 @@
     <div id="authScreen" class="fixed inset-0 bg-[#f4f7fa] z-[200] flex items-center justify-center p-4 transition-opacity duration-500">
         <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl w-full max-w-md transform transition-all duration-500 scale-100">
             <h1 class="text-2xl font-bold text-center mb-2" id="authTitle">Регистрация</h1>
-            <p class="text-gray-400 text-center mb-8 text-sm" id="authSubtitle">Латиница, 4-12 симв., без цифр в начале</p>
+            <p class="text-gray-400 text-center mb-8 text-sm" id="authSubtitle">Зарегистрируйтесь или войдите</p>
             <div class="space-y-4">
                 <input type="text" id="authUsername" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none transition-all focus:border-blue-400 focus:bg-white" placeholder="Никнейм">
                 <input type="password" id="authPassword" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none transition-all focus:border-blue-400 focus:bg-white" placeholder="Пароль">
@@ -238,7 +238,11 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        const ROOT = "pnavkv2_v7"; 
+        // --- ПЕРЕВОД НА V8 ---
+        const ROOT = "pnavkv2_v8"; 
+        const APP_VERSION = "8.0";
+        // ---------------------
+
         const ID_REGEX = /^[a-z_][a-z0-9_]{3,11}$/;
         const VERIFIED_HTML = `<span class="verified-badge" title="Подтвержденный аккаунт"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>`;
 
@@ -254,6 +258,15 @@
         let lastRenderedChatIds = "";
 
         const initAuth = async () => {
+          // ПРИНУДИТЕЛЬНЫЙ ВЫБРОС НА РЕГИСТРАЦИЮ
+          const currentVersion = localStorage.getItem('pnavkv2_app_version');
+          if (currentVersion !== APP_VERSION) {
+              localStorage.clear(); // Полная очистка
+              localStorage.setItem('pnavkv2_app_version', APP_VERSION);
+              location.reload(); // Перезагрузка для применения очистки
+              return;
+          }
+
           if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
             await signInWithCustomToken(auth, __initial_auth_token);
           } else {
@@ -283,7 +296,7 @@
             } else {
                 elements.title.textContent = 'Регистрация';
                 elements.btn.textContent = 'Зарегистрироваться';
-                elements.subtitle.textContent = 'Латиница, 4-12 симв., без цифр в начале';
+                elements.subtitle.textContent = 'Зарегистрируйтесь или войдите';
                 elements.toggle.textContent = 'Уже есть аккаунт? Войти';
             }
         };
@@ -433,7 +446,6 @@
             const c = channels.find(x => x.id === id);
             activeChat = { id, type: 'channel', data: c };
             
-            // Фикс бага с пустыми каналами: очищаем старые сообщения перед загрузкой новых
             lastMessagesData = []; 
             document.getElementById('messagesArea').innerHTML = '';
             
@@ -447,7 +459,6 @@
             if(activeChat?.id === chatId) return;
             activeChat = { id: chatId, type: 'direct', targetUser };
             
-            // Фикс бага с пустыми каналами: очищаем старые сообщения
             lastMessagesData = [];
             document.getElementById('messagesArea').innerHTML = '';
             
@@ -486,7 +497,6 @@
         let lastMessagesData = []; 
         function renderMessages(msgs) {
             const area = document.getElementById('messagesArea');
-            // Если сообщений нет в принципе, очищаем экран
             if (msgs.length === 0) {
                 area.innerHTML = '';
                 lastMessagesData = [];
