@@ -357,8 +357,6 @@
                 channels = s.docs.map(d => {
                     const data = d.data();
                     lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
-                    // Исправлен баг с непрочитанными на новых аккаунтах:
-                    // Значок только если я владелец или подписан
                     const isRelevant = data.owner === user || mySubs.includes(d.id);
                     unreadStates[d.id] = isRelevant && data.last_msg_by && data.last_msg_by !== user && (!data.viewedBy || !data.viewedBy.includes(user));
                     const chanObj = { id: d.id, ...data, type: 'channel' };
@@ -434,7 +432,11 @@
             if(activeChat?.id === id) return;
             const c = channels.find(x => x.id === id);
             activeChat = { id, type: 'channel', data: c };
+            
+            // Фикс бага с пустыми каналами: очищаем старые сообщения перед загрузкой новых
             lastMessagesData = []; 
+            document.getElementById('messagesArea').innerHTML = '';
+            
             updateUI();
             updateDoc(doc(db, ROOT, "channels", "list", id), { viewedBy: arrayUnion(user) });
             subscribeToMessages(collection(db, ROOT, "channels", "list", id, "messages"));
@@ -444,7 +446,11 @@
             const chatId = [user, targetUser].sort().join("_v_");
             if(activeChat?.id === chatId) return;
             activeChat = { id: chatId, type: 'direct', targetUser };
+            
+            // Фикс бага с пустыми каналами: очищаем старые сообщения
             lastMessagesData = [];
+            document.getElementById('messagesArea').innerHTML = '';
+            
             updateUI();
             const chatRef = doc(db, ROOT, "direct_chats", "list", chatId);
             const chatSnap = await getDoc(chatRef);
@@ -463,7 +469,6 @@
                     const now = Date.now();
                     msgs.forEach(m => {
                         const lastView = cooldowns[m.id];
-                        // Кулдаун 5 минут
                         if (!lastView || (now - lastView > 300000)) {
                             updateDoc(doc(db, ROOT, "channels", "list", activeChat.id, "messages", m.id), { 
                                 viewCount: increment(1) 
@@ -481,6 +486,13 @@
         let lastMessagesData = []; 
         function renderMessages(msgs) {
             const area = document.getElementById('messagesArea');
+            // Если сообщений нет в принципе, очищаем экран
+            if (msgs.length === 0) {
+                area.innerHTML = '';
+                lastMessagesData = [];
+                return;
+            }
+
             const sortedMsgs = [...msgs].sort((a, b) => {
                 const timeA = a.time?.toMillis() || Date.now() + 10000;
                 const timeB = b.time?.toMillis() || Date.now() + 10000;
@@ -543,7 +555,6 @@
             try {
                 const ref = await addDoc(collection(db, ROOT, colPath, "list", currentChat.id, "messages"), msgData);
                 if (isChan) {
-                    // Сразу записываем просмотр автора в кулдауны, чтобы избежать бага с 3 просмотрами
                     const cooldowns = JSON.parse(localStorage.getItem('pnavkv2_view_cooldowns') || "{}");
                     cooldowns[ref.id] = Date.now();
                     localStorage.setItem('pnavkv2_view_cooldowns', JSON.stringify(cooldowns));
