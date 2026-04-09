@@ -27,7 +27,7 @@
         
         .avatar { width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
         
-        /* Синий кружочек уведомления */
+        /* Индикатор непрочитанного сообщения */
         .unread-badge { width: 10px; height: 10px; background: #3b82f6; border-radius: 50%; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
 
         .message-bubble { position: relative; max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); align-self: flex-start; animation: slideIn 0.3s ease-out; }
@@ -186,9 +186,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // --- СБРОС БАЗЫ ДАННЫХ ---
-        // Измените это значение (например, pnavkv2_v4), чтобы начать с чистого листа.
-        const ROOT = "pnavkv2_v3";
+        // КОРНЕВОЙ ПУТЬ БАЗЫ ДАННЫХ (смена v3 на v4 обнуляет данные для текущего клиента)
+        const ROOT = "pnavkv2_v4";
 
         let user = null;
         let channels = [];
@@ -199,9 +198,16 @@
         let directChatsWithActivity = [];
         let editingChannelId = null;
         let lastMessageTimestamps = {};
+        let unreadStates = {}; 
 
         const savedUser = localStorage.getItem('pnavkv2_user');
-        if (savedUser) loginAs(savedUser);
+        // Очищаем локальное хранилище при смене версии, чтобы не было конфликтов
+        if (savedUser && !localStorage.getItem('pnavkv2_v4_flag')) {
+            localStorage.clear();
+            localStorage.setItem('pnavkv2_v4_flag', 'true');
+        } else if (savedUser) {
+            loginAs(savedUser);
+        }
         signInAnonymously(auth);
 
         window.toggleAuthMode = () => {
@@ -226,7 +232,6 @@
             const nameInput = document.getElementById('authUsername').value.trim().toLowerCase().replace('@', '');
             const pass = document.getElementById('authPassword').value;
 
-            // Валидация
             const userRegex = /^[a-z_][a-z0-9_]{3,11}$/;
             if (!userRegex.test(nameInput)) {
                 return showToast("Некорректный никнейм (4-12 симв., латиница)");
@@ -248,6 +253,7 @@
         function loginAs(name) {
             user = name;
             localStorage.setItem('pnavkv2_user', name);
+            localStorage.setItem('pnavkv2_v4_flag', 'true');
             document.getElementById('authScreen').style.opacity = '0';
             setTimeout(() => document.getElementById('authScreen').style.display = 'none', 500);
             
@@ -255,7 +261,6 @@
             document.getElementById('chatView').style.display = 'flex';
             document.getElementById('myUsername').textContent = '@' + name;
             
-            // Listen to direct chats
             onSnapshot(collection(db, ROOT, "direct_chats", "list"), (s) => {
                 directChatsWithActivity = s.docs
                     .filter(d => d.id.includes(user))
@@ -264,27 +269,34 @@
                         const other = parts.find(p => p !== user);
                         const data = d.data();
                         lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
+                        
+                        // Баг исправлен: проверка unread только если не мы авторы
+                        unreadStates[d.id] = data.last_msg_by && data.last_msg_by !== user && 
+                                            (!data.viewedBy || !data.viewedBy.includes(user));
+                        
                         return { id: d.id, type: 'direct', username: other, lastTime: data.last_msg_time?.seconds || 0, lastBy: data.last_msg_by };
                     });
                 renderChatList();
             });
 
-            // Listen to my profile/subs
             onSnapshot(doc(db, ROOT, "users", "list", name), (s) => {
                 if(s.exists()) { mySubs = s.data().subs || []; renderChatList(); }
             });
 
-            // Listen to channels
             onSnapshot(collection(db, ROOT, "channels", "list"), (s) => {
                 channels = s.docs.map(d => {
                     const data = d.data();
                     lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
+                    
+                    // Баг исправлен: проверка unread только если не мы авторы
+                    unreadStates[d.id] = data.last_msg_by && data.last_msg_by !== user && 
+                                        (!data.viewedBy || !data.viewedBy.includes(user));
+                                        
                     return { id: d.id, ...data, type: 'channel' };
                 });
                 renderChatList();
             });
 
-            // Listen to all users for search
             onSnapshot(collection(db, ROOT, "users", "list"), (s) => {
                 allUsers = s.docs.map(d => ({ id: d.id, ...d.data(), type: 'user' }));
                 renderChatList();
@@ -308,7 +320,6 @@
                 items = [...myChannels, ...directChatsWithActivity];
             }
 
-            // Uniqueness and sorting by last message time
             const uniqueItems = Array.from(new Map(items.map(i => [i.id || i.username, i])).values());
             uniqueItems.sort((a, b) => {
                 const chatIdA = a.id || [user, a.username].sort().join("_v_");
@@ -322,8 +333,8 @@
                 const displayName = isChannel ? item.name : `@${item.username}`;
                 const subtext = isChannel ? `@${item.link}` : 'Личная переписка';
                 
-                // Blue circle indicator
-                const isUnread = activeChat?.id !== chatId && item.lastBy && item.lastBy !== user;
+                // Синий кружок уведомления (скрыт если чат активен)
+                const isUnread = unreadStates[chatId] && activeChat?.id !== chatId;
 
                 const div = document.createElement('div');
                 div.className = `chat-item ${activeChat?.id === chatId ? 'active' : ''}`;
@@ -343,6 +354,12 @@
             const c = channels.find(x => x.id === id);
             activeChat = { id, type: 'channel', data: c };
             updateUI();
+            
+            // Баг исправлен: сбрасываем непрочитанное сразу
+            unreadStates[id] = false;
+            const metaPath = doc(db, ROOT, "channels", "list", id);
+            updateDoc(metaPath, { viewedBy: arrayUnion(user) });
+            
             subscribeToMessages(collection(db, ROOT, "channels", "list", id, "messages"));
         };
 
@@ -350,6 +367,12 @@
             const chatId = [user, targetUser].sort().join("_v_");
             activeChat = { id: chatId, type: 'direct', targetUser };
             updateUI();
+            
+            // Баг исправлен: сбрасываем непрочитанное сразу
+            unreadStates[chatId] = false;
+            const metaPath = doc(db, ROOT, "direct_chats", "list", chatId);
+            updateDoc(metaPath, { viewedBy: arrayUnion(user) });
+            
             subscribeToMessages(collection(db, ROOT, "direct_chats", "list", chatId, "messages"));
         };
 
@@ -363,13 +386,12 @@
                 renderMessages(msgs);
                 area.style.opacity = '1';
                 
-                if(activeChat.type === 'channel') {
-                    msgs.forEach(m => {
-                        if(m.sender !== user && (!m.viewedBy || !m.viewedBy.includes(user))) {
-                            updateDoc(doc(colRef, m.id), { viewedBy: arrayUnion(user) });
-                        }
-                    });
-                }
+                // Помечаем все сообщения в текущем открытом чате как прочитанные в реальном времени
+                msgs.forEach(m => {
+                    if(m.sender !== user && (!m.viewedBy || !m.viewedBy.includes(user))) {
+                        updateDoc(doc(colRef, m.id), { viewedBy: arrayUnion(user) });
+                    }
+                });
             });
             
             if (window.innerWidth <= 768) {
@@ -427,7 +449,8 @@
             
             await setDoc(metaPath, { 
                 last_msg_time: serverTimestamp(), 
-                last_msg_by: user 
+                last_msg_by: user,
+                viewedBy: [user] 
             }, { merge: true });
         };
 
@@ -493,19 +516,16 @@
             if (!activeChat || activeChat.type !== 'channel') return;
             const channelId = activeChat.id;
             
-            // Удаляем из подписок пользователя
             await updateDoc(doc(db, ROOT, "users", "list", user), {
                 subs: arrayRemove(channelId)
             });
             
-            // Удаляем пользователя из подписчиков канала
             await updateDoc(doc(db, ROOT, "channels", "list", channelId), {
                 subscribers: arrayRemove(user)
             });
 
             showToast("Вы вышли из канала");
             
-            // Сбрасываем вид
             activeChat = null;
             document.getElementById('activeChannelContent').classList.add('hidden');
             document.getElementById('noChannelView').classList.remove('hidden');
@@ -538,7 +558,7 @@
                 if (!snap.empty) return showToast("ID занят");
                 
                 const ref = await addDoc(collection(db, ROOT, "channels", "list"), { 
-                    name: chanName, link: chanLink, owner: user, subscribers: [user], last_msg_time: serverTimestamp() 
+                    name: chanName, link: chanLink, owner: user, subscribers: [user], last_msg_time: serverTimestamp(), viewedBy: [user] 
                 });
                 await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(ref.id) });
                 selectChannel(ref.id);
