@@ -238,8 +238,10 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
+        // --- ПЕРЕВОД НА V8 ---
         const ROOT = "pnavkv2_v8"; 
         const APP_VERSION = "8.0";
+        // ---------------------
 
         const ID_REGEX = /^[a-z_][a-z0-9_]{3,11}$/;
         const VERIFIED_HTML = `<span class="verified-badge" title="Подтвержденный аккаунт"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>`;
@@ -256,11 +258,12 @@
         let lastRenderedChatIds = "";
 
         const initAuth = async () => {
+          // ПРИНУДИТЕЛЬНЫЙ ВЫБРОС НА РЕГИСТРАЦИЮ
           const currentVersion = localStorage.getItem('pnavkv2_app_version');
           if (currentVersion !== APP_VERSION) {
-              localStorage.clear();
+              localStorage.clear(); // Полная очистка
               localStorage.setItem('pnavkv2_app_version', APP_VERSION);
-              location.reload();
+              location.reload(); // Перезагрузка для применения очистки
               return;
           }
 
@@ -388,7 +391,7 @@
         window.renderChatList = () => {
             const list = document.getElementById('chatListArea');
             const searchInput = document.getElementById('searchInput');
-            if (!searchInput || !list) return;
+            if (!searchInput) return;
             const search = searchInput.value.toLowerCase().replace('@', '');
             let items = (search.length > 0) 
                 ? [...channels.filter(c => c.name.toLowerCase().includes(search) || c.link.includes(search)), ...allUsers.filter(u => u.username.includes(search) && u.username !== user)]
@@ -442,8 +445,10 @@
             if(activeChat?.id === id) return;
             const c = channels.find(x => x.id === id);
             activeChat = { id, type: 'channel', data: c };
+            
             lastMessagesData = []; 
             document.getElementById('messagesArea').innerHTML = '';
+            
             updateUI();
             updateDoc(doc(db, ROOT, "channels", "list", id), { viewedBy: arrayUnion(user) });
             subscribeToMessages(collection(db, ROOT, "channels", "list", id, "messages"));
@@ -453,8 +458,10 @@
             const chatId = [user, targetUser].sort().join("_v_");
             if(activeChat?.id === chatId) return;
             activeChat = { id: chatId, type: 'direct', targetUser };
+            
             lastMessagesData = [];
             document.getElementById('messagesArea').innerHTML = '';
+            
             updateUI();
             const chatRef = doc(db, ROOT, "direct_chats", "list", chatId);
             const chatSnap = await getDoc(chatRef);
@@ -465,8 +472,8 @@
 
         function subscribeToMessages(colRef) {
             if (window.msgUnsub) window.msgUnsub();
-            window.msgUnsub = onSnapshot(colRef, { includeMetadataChanges: true }, (s) => {
-                const msgs = s.docs.map(d => ({id: d.id, ...d.data({ serverTimestamps: 'estimate' })}));
+            window.msgUnsub = onSnapshot(colRef, (s) => {
+                const msgs = s.docs.map(d => ({id: d.id, ...d.data()}));
                 renderMessages(msgs);
                 if (activeChat.type === 'channel') {
                     const cooldowns = JSON.parse(localStorage.getItem('pnavkv2_view_cooldowns') || "{}");
@@ -490,7 +497,6 @@
         let lastMessagesData = []; 
         function renderMessages(msgs) {
             const area = document.getElementById('messagesArea');
-            if (!area) return;
             if (msgs.length === 0) {
                 area.innerHTML = '';
                 lastMessagesData = [];
@@ -503,11 +509,7 @@
                 return timeA - timeB;
             });
 
-            const lastMsgA = sortedMsgs[sortedMsgs.length - 1];
-            const lastMsgB = lastMessagesData[lastMessagesData.length - 1];
-            const timeChanged = lastMsgA?.time?.toMillis() !== lastMsgB?.time?.toMillis();
-
-            if (sortedMsgs.length !== lastMessagesData.length || timeChanged) {
+            if (sortedMsgs.length !== lastMessagesData.length) {
                 area.innerHTML = sortedMsgs.map(m => {
                     const isMine = m.sender === user;
                     const senderData = allUsers.find(u => u.username === m.sender);
