@@ -51,6 +51,9 @@
 
         .btn-animate { transition: all 0.2s ease; }
         .btn-animate:active { transform: scale(0.9); }
+        
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body class="flex">
@@ -107,7 +110,7 @@
                     <button onclick="goBack()" class="md:hidden p-2 text-gray-500 btn-animate rounded-full">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-width="2.5"></path></svg>
                     </button>
-                    <div class="flex items-center gap-2 cursor-pointer overflow-hidden transition-opacity hover:opacity-80" onclick="openChannelProfile()">
+                    <div class="flex items-center gap-2 cursor-pointer overflow-hidden transition-opacity hover:opacity-80" onclick="openProfile()">
                         <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 transition-transform">?</div>
                         <div class="min-w-0">
                             <h3 id="headerTitle" class="font-bold text-gray-800 leading-tight truncate text-sm md:text-base">Имя</h3>
@@ -119,7 +122,6 @@
                     <button id="leaveChannelBtn" onclick="leaveCurrentChannel()" class="hidden p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors btn-animate" title="Выйти из канала">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     </button>
-                    <button id="editChannelBtn" onclick="openEditModal()" class="hidden text-[10px] md:text-xs bg-gray-100 px-3 py-1.5 rounded-lg font-bold text-gray-600 active:bg-gray-200 transition-colors">Ред.</button>
                 </div>
             </header>
             
@@ -140,28 +142,50 @@
         </div>
     </main>
 
-    <!-- Modals -->
-    <div id="channelModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) closeChannelModal()">
+    <!-- Modal for Creating Channel -->
+    <div id="createChannelModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) this.style.display='none'">
         <div class="bg-white p-6 rounded-3xl w-full max-w-[400px] shadow-2xl transform transition-transform">
-            <h2 id="modalTitle" class="text-xl font-bold mb-2">Создать канал</h2>
+            <h2 class="text-xl font-bold mb-2">Создать канал</h2>
             <p class="text-[10px] text-gray-400 mb-4 italic">Латиница, 4-12 симв., без цифр в начале</p>
             <div class="space-y-4">
-                <input type="text" id="channelNameInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400" placeholder="Название канала">
-                <input type="text" id="channelIdInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400" placeholder="Ссылка (id)">
+                <input type="text" id="createNameInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400" placeholder="Название канала">
+                <input type="text" id="createIdInput" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400" placeholder="Ссылка (id)">
                 <div class="flex gap-3 pt-2">
-                    <button onclick="closeChannelModal()" class="flex-1 py-4 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-colors">Отмена</button>
-                    <button onclick="saveChannel()" class="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold btn-animate">ОК</button>
+                    <button onclick="document.getElementById('createChannelModal').style.display='none'" class="flex-1 py-4 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-colors">Отмена</button>
+                    <button onclick="saveNewChannel()" class="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold btn-animate">Создать</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Unified Profile Modal -->
     <div id="profileModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) this.style.display='none'">
-        <div class="bg-white p-8 rounded-3xl w-full max-w-[350px] text-center shadow-2xl">
-            <div id="profAvatar" class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl text-white font-bold">?</div>
-            <h2 id="profName" class="text-xl font-bold">Имя</h2>
-            <p id="profId" class="text-blue-500 mb-4">@id</p>
-            <div id="profMeta" class="text-left border-t pt-4 space-y-2"></div>
+        <div class="bg-white p-6 rounded-3xl w-full max-w-[450px] shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div id="profileScrollArea" class="overflow-y-auto flex-1 pr-1">
+                <div id="profAvatar" class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl text-white font-bold">?</div>
+                <h2 id="profName" class="text-xl font-bold text-center">Имя</h2>
+                <p id="profId" class="text-blue-500 mb-6 text-center">@id</p>
+                
+                <!-- Owner Controls (Editing) -->
+                <div id="ownerEditSection" class="hidden space-y-4 mb-6 border-t pt-4">
+                    <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Настройки канала</h4>
+                    <input type="text" id="editNameInput" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-blue-400 text-sm" placeholder="Название">
+                    <input type="text" id="editIdInput" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-blue-400 text-sm" placeholder="ID канала">
+                    <button onclick="updateChannelData()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold btn-animate text-sm">Сохранить изменения</button>
+                </div>
+
+                <!-- Subscribers List (Owner Only) -->
+                <div id="subscribersSection" class="hidden border-t pt-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Участники</h4>
+                        <span id="subCountBadge" class="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="subsListArea" class="space-y-2"></div>
+                </div>
+
+                <!-- Basic Meta (For everyone) -->
+                <div id="profMeta" class="text-left border-t pt-4 space-y-2"></div>
+            </div>
             <button onclick="document.getElementById('profileModal').style.display='none'" class="mt-6 w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold btn-animate">Закрыть</button>
         </div>
     </div>
@@ -171,7 +195,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs, or } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBAFGyrgliehm-cfJG91QkQRvUGACPP8rA",
@@ -187,7 +211,7 @@
         const db = getFirestore(app);
         
         const ROOT = "pnavkv2_v4";
-        const ID_REGEX = /^[a-z_][a-z0-9_]{3,11}$/; // Общий регекс для юзернеймов и каналов
+        const ID_REGEX = /^[a-z_][a-z0-9_]{3,11}$/;
 
         let user = null;
         let channels = [];
@@ -196,24 +220,15 @@
         let activeChat = null;
         let authMode = 'register';
         let directChatsWithActivity = [];
-        let editingChannelId = null;
         let lastMessageTimestamps = {};
         let unreadStates = {}; 
 
         const savedUser = localStorage.getItem('pnavkv2_user');
-        if (savedUser && !localStorage.getItem('pnavkv2_v4_flag')) {
-            localStorage.clear();
-            localStorage.setItem('pnavkv2_v4_flag', 'true');
-        } else if (savedUser) {
-            loginAs(savedUser);
-        }
+        if (savedUser) loginAs(savedUser);
         signInAnonymously(auth);
 
         window.toggleAuthMode = () => {
             authMode = authMode === 'register' ? 'login' : 'register';
-            document.getElementById('authUsername').value = "";
-            document.getElementById('authPassword').value = "";
-
             if (authMode === 'login') {
                 document.getElementById('authTitle').textContent = 'Вход';
                 document.getElementById('authBtnText').textContent = 'Войти';
@@ -231,9 +246,7 @@
             const nameInput = document.getElementById('authUsername').value.trim().toLowerCase().replace('@', '');
             const pass = document.getElementById('authPassword').value;
 
-            if (!ID_REGEX.test(nameInput)) {
-                return showToast("Некорректный никнейм (4-12 симв., латиница)");
-            }
+            if (!ID_REGEX.test(nameInput)) return showToast("Некорректный никнейм (4-12 симв., латиница)");
             if (pass.length < 4) return showToast("Короткий пароль");
             
             const uRef = doc(db, ROOT, "users", "list", nameInput);
@@ -258,20 +271,14 @@
             const now = Date.now();
             const last = lastActive.seconds * 1000;
             const diff = now - last;
-            
             if (diff < 60000) return "В сети";
-            
-            const date = new Date(last);
-            return `Был(а) в сети в ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+            return `Был(а) в сети в ${new Date(last).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
         }
 
         function loginAs(name) {
             user = name;
             localStorage.setItem('pnavkv2_user', name);
-            localStorage.setItem('pnavkv2_v4_flag', 'true');
-            document.getElementById('authScreen').style.opacity = '0';
-            setTimeout(() => document.getElementById('authScreen').style.display = 'none', 500);
-            
+            document.getElementById('authScreen').style.display = 'none';
             document.getElementById('appSidebar').style.display = 'flex';
             document.getElementById('chatView').style.display = 'flex';
             document.getElementById('myUsername').textContent = '@' + name;
@@ -283,29 +290,42 @@
                 directChatsWithActivity = s.docs
                     .filter(d => d.id.includes(user))
                     .map(d => {
-                        const parts = d.id.split("_v_");
-                        const other = parts.find(p => p !== user);
+                        const other = d.id.split("_v_").find(p => p !== user);
                         const data = d.data();
                         lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
-                        unreadStates[d.id] = data.last_msg_by && data.last_msg_by !== user && 
-                                            (!data.viewedBy || !data.viewedBy.includes(user));
-                        
-                        return { id: d.id, type: 'direct', username: other, lastTime: data.last_msg_time?.seconds || 0, lastBy: data.last_msg_by };
+                        unreadStates[d.id] = data.last_msg_by && data.last_msg_by !== user && (!data.viewedBy || !data.viewedBy.includes(user));
+                        return { id: d.id, type: 'direct', username: other };
                     });
                 renderChatList();
             });
 
             onSnapshot(doc(db, ROOT, "users", "list", name), (s) => {
-                if(s.exists()) { mySubs = s.data().subs || []; renderChatList(); }
+                if(s.exists()) { 
+                    const data = s.data();
+                    mySubs = data.subs || []; 
+                    renderChatList(); 
+                    // Если текущий открытый канал пропал из подписок (был забанен), закрываем его
+                    if (activeChat && activeChat.type === 'channel' && activeChat.data.owner !== user && !mySubs.includes(activeChat.id)) {
+                        closeActiveChat();
+                    }
+                }
             });
 
             onSnapshot(collection(db, ROOT, "channels", "list"), (s) => {
                 channels = s.docs.map(d => {
                     const data = d.data();
                     lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
-                    unreadStates[d.id] = data.last_msg_by && data.last_msg_by !== user && 
-                                        (!data.viewedBy || !data.viewedBy.includes(user));
-                    return { id: d.id, ...data, type: 'channel' };
+                    unreadStates[d.id] = data.last_msg_by && data.last_msg_by !== user && (!data.viewedBy || !data.viewedBy.includes(user));
+                    const chanObj = { id: d.id, ...data, type: 'channel' };
+                    // Обновляем данные активного чата в реальном времени
+                    if (activeChat && activeChat.id === d.id) {
+                        activeChat.data = chanObj;
+                        updateUI();
+                        if (document.getElementById('profileModal').style.display === 'flex') {
+                            renderProfileContent();
+                        }
+                    }
+                    return chanObj;
                 });
                 renderChatList();
             });
@@ -313,59 +333,46 @@
             onSnapshot(collection(db, ROOT, "users", "list"), (s) => {
                 allUsers = s.docs.map(d => ({ id: d.id, ...d.data(), type: 'user' }));
                 renderChatList();
-                if (activeChat && activeChat.type === 'direct') updateUI();
+                if (activeChat?.type === 'direct') updateUI();
             });
+        }
+
+        function closeActiveChat() {
+            activeChat = null;
+            document.getElementById('activeChannelContent').classList.add('hidden');
+            document.getElementById('noChannelView').classList.remove('hidden');
+            if (window.innerWidth <= 768) goBack();
+            renderChatList();
         }
 
         window.renderChatList = () => {
             const list = document.getElementById('chatListArea');
-            const searchInput = document.getElementById('searchInput');
-            if (!searchInput) return;
-            const search = searchInput.value.toLowerCase().replace('@', '');
+            const search = document.getElementById('searchInput').value.toLowerCase().replace('@', '');
             list.innerHTML = '';
 
-            let items = [];
-            if (search.length > 0) {
-                const filteredChannels = channels.filter(c => (c.name && c.name.toLowerCase().includes(search)) || (c.link && c.link.includes(search)));
-                const filteredUsers = allUsers.filter(u => u.username.toLowerCase().includes(search) && u.username !== user);
-                items = [...filteredChannels, ...filteredUsers];
-            } else {
-                const myChannels = channels.filter(c => c.owner === user || mySubs.includes(c.id));
-                items = [...myChannels, ...directChatsWithActivity];
-            }
+            let items = (search.length > 0) 
+                ? [...channels.filter(c => c.name.toLowerCase().includes(search) || c.link.includes(search)), ...allUsers.filter(u => u.username.includes(search) && u.username !== user)]
+                : [...channels.filter(c => c.owner === user || mySubs.includes(c.id)), ...directChatsWithActivity];
 
-            const uniqueItems = Array.from(new Map(items.map(i => [i.id || i.username, i])).values());
-            uniqueItems.sort((a, b) => {
-                const chatIdA = a.id || [user, a.username].sort().join("_v_");
-                const chatIdB = b.id || [user, b.username].sort().join("_v_");
-                return (lastMessageTimestamps[chatIdB] || 0) - (lastMessageTimestamps[chatIdA] || 0);
-            });
+            const unique = Array.from(new Map(items.map(i => [i.id || i.username, i])).values())
+                .sort((a, b) => (lastMessageTimestamps[b.id || [user, b.username].sort().join("_v_")] || 0) - (lastMessageTimestamps[a.id || [user, a.username].sort().join("_v_")] || 0));
 
-            uniqueItems.forEach(item => {
-                const isChannel = item.type === 'channel';
-                const chatId = isChannel ? item.id : (item.id || [user, item.username].sort().join("_v_"));
-                const displayName = isChannel ? item.name : `@${item.username}`;
+            unique.forEach(item => {
+                const isChan = item.type === 'channel';
+                const chatId = isChan ? item.id : (item.id || [user, item.username].sort().join("_v_"));
+                const name = isChan ? item.name : `@${item.username}`;
+                const subtext = isChan ? `@${item.link}` : formatStatus(allUsers.find(u => u.username === item.username)?.last_active);
                 
-                let subtext = "";
-                if (isChannel) {
-                    subtext = `@${item.link}`;
-                } else {
-                    const userData = allUsers.find(u => u.username === item.username);
-                    subtext = formatStatus(userData?.last_active);
-                }
-                
-                const isUnread = unreadStates[chatId] && activeChat?.id !== chatId;
-
                 const div = document.createElement('div');
                 div.className = `chat-item ${activeChat?.id === chatId ? 'active' : ''}`;
-                div.onclick = () => isChannel ? selectChannel(item.id) : selectUser(item.username);
+                div.onclick = () => isChan ? selectChannel(item.id) : selectUser(item.username);
                 div.innerHTML = `
-                    <div class="avatar shadow-sm" style="background:${getHashColor(displayName)}">${(isChannel ? item.name : item.username)[0].toUpperCase()}</div>
+                    <div class="avatar shadow-sm" style="background:${getHashColor(name)}">${(isChan ? item.name : item.username)[0].toUpperCase()}</div>
                     <div class="flex-1 overflow-hidden">
-                        <div class="font-bold truncate text-gray-800">${displayName}</div>
+                        <div class="font-bold truncate text-gray-800">${name}</div>
                         <p class="text-[11px] ${subtext === 'В сети' ? 'text-blue-500 font-medium' : 'text-gray-400'} truncate">${subtext}</p>
                     </div>
-                    ${isUnread ? '<div class="unread-badge"></div>' : ''}`;
+                    ${unreadStates[chatId] && activeChat?.id !== chatId ? '<div class="unread-badge"></div>' : ''}`;
                 list.appendChild(div);
             });
         };
@@ -374,11 +381,7 @@
             const c = channels.find(x => x.id === id);
             activeChat = { id, type: 'channel', data: c };
             updateUI();
-            
-            unreadStates[id] = false;
-            const metaPath = doc(db, ROOT, "channels", "list", id);
-            updateDoc(metaPath, { viewedBy: arrayUnion(user) });
-            
+            updateDoc(doc(db, ROOT, "channels", "list", id), { viewedBy: arrayUnion(user) });
             subscribeToMessages(collection(db, ROOT, "channels", "list", id, "messages"));
         };
 
@@ -386,38 +389,17 @@
             const chatId = [user, targetUser].sort().join("_v_");
             activeChat = { id: chatId, type: 'direct', targetUser };
             updateUI();
-            
-            unreadStates[chatId] = false;
-            const metaPath = doc(db, ROOT, "direct_chats", "list", chatId);
-            updateDoc(metaPath, { viewedBy: arrayUnion(user) });
-            
+            updateDoc(doc(db, ROOT, "direct_chats", "list", chatId), { viewedBy: arrayUnion(user) });
             subscribeToMessages(collection(db, ROOT, "direct_chats", "list", chatId, "messages"));
         };
 
         function subscribeToMessages(colRef) {
             if (window.msgUnsub) window.msgUnsub();
-            const area = document.getElementById('activeChannelContent');
-            area.style.opacity = '0';
-            
             window.msgUnsub = onSnapshot(colRef, (s) => {
-                const msgs = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => {
-                    const timeA = a.time?.toMillis() || Date.now() + 100000;
-                    const timeB = b.time?.toMillis() || Date.now() + 100000;
-                    return timeA - timeB;
-                });
+                const msgs = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.time?.toMillis() || 0) - (b.time?.toMillis() || 0));
                 renderMessages(msgs);
-                area.style.opacity = '1';
-                
-                msgs.forEach(m => {
-                    if(m.sender !== user && (!m.viewedBy || !m.viewedBy.includes(user))) {
-                        updateDoc(doc(colRef, m.id), { viewedBy: arrayUnion(user) });
-                    }
-                });
             });
-            
-            if (window.innerWidth <= 768) {
-                document.getElementById('appSidebar').classList.add('hidden-mobile');
-            }
+            if (window.innerWidth <= 768) document.getElementById('appSidebar').classList.add('hidden-mobile');
             renderChatList();
         }
 
@@ -426,24 +408,15 @@
             area.innerHTML = '';
             msgs.forEach(m => {
                 const isMine = m.sender === user;
-                const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
-                const viewsCount = m.viewedBy ? m.viewedBy.length : 0;
-                
                 const div = document.createElement('div');
                 div.className = `message-bubble ${isMine ? 'mine' : ''}`;
                 div.innerHTML = `
                     ${!isMine && activeChat.type === 'channel' ? `<div class="text-[10px] font-bold text-blue-600 mb-1">@${m.sender}</div>` : ''}
                     <div class="break-words">${m.text}</div>
                     <div class="flex items-center justify-end gap-2 mt-1">
-                        ${activeChat.type === 'channel' ? `
-                            <div class="views-badge">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg>
-                                <span>${viewsCount}</span>
-                            </div>
-                        ` : ''}
-                        <div class="text-[9px] ${isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
-                    </div>
-                `;
+                        ${activeChat.type === 'channel' ? `<div class="views-badge"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg><span>${m.viewedBy?.length || 0}</span></div>` : ''}
+                        <div class="text-[9px] ${isMine ? 'text-blue-100' : 'text-gray-400'}">${m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...'}</div>
+                    </div>`;
                 area.appendChild(div);
             });
             area.scrollTop = area.scrollHeight;
@@ -454,207 +427,143 @@
             const text = input.value.trim();
             if (!text || !activeChat) return;
             input.value = '';
-            
             const isChan = activeChat.type === 'channel';
-            const colPath = isChan
-                ? collection(db, ROOT, "channels", "list", activeChat.id, "messages")
-                : collection(db, ROOT, "direct_chats", "list", activeChat.id, "messages");
-                
-            await addDoc(colPath, {
-                text, sender: user, time: serverTimestamp(), viewedBy: [user]
-            });
-
-            const metaPath = isChan
-                ? doc(db, ROOT, "channels", "list", activeChat.id)
-                : doc(db, ROOT, "direct_chats", "list", activeChat.id);
-            
-            await setDoc(metaPath, { 
-                last_msg_time: serverTimestamp(), 
-                last_msg_by: user,
-                viewedBy: [user] 
-            }, { merge: true });
-            
-            updateLastActive();
+            const col = collection(db, ROOT, isChan ? "channels" : "direct_chats", "list", activeChat.id, "messages");
+            await addDoc(col, { text, sender: user, time: serverTimestamp(), viewedBy: [user] });
+            await setDoc(doc(db, ROOT, isChan ? "channels" : "direct_chats", "list", activeChat.id), { last_msg_time: serverTimestamp(), last_msg_by: user, viewedBy: [user] }, { merge: true });
         };
 
         function updateUI() {
             if (!activeChat) return;
             document.getElementById('noChannelView').classList.add('hidden');
             document.getElementById('activeChannelContent').classList.remove('hidden');
+            const c = activeChat.type === 'channel' ? activeChat.data : null;
             
-            const headerTitle = document.getElementById('headerTitle');
-            const headerMeta = document.getElementById('headerMeta');
-            const avatar = document.getElementById('headerAvatar');
+            document.getElementById('headerTitle').textContent = c ? c.name : `@${activeChat.targetUser}`;
+            document.getElementById('headerMeta').textContent = c ? `@${c.link} • ${c.subscribers?.length || 0} подп.` : formatStatus(allUsers.find(u => u.username === activeChat.targetUser)?.last_active);
+            document.getElementById('headerAvatar').textContent = (c ? c.name : activeChat.targetUser)[0].toUpperCase();
+            document.getElementById('headerAvatar').style.background = getHashColor(c ? c.name : activeChat.targetUser);
             
-            if (activeChat.type === 'channel') {
-                const c = activeChat.data;
-                headerTitle.textContent = c.name;
-                headerMeta.textContent = `@${c.link} • ${c.subscribers?.length || 0} подп.`;
-                avatar.textContent = c.name ? c.name[0].toUpperCase() : '?';
-                avatar.style.background = getHashColor(c.name || 'default');
-                
-                const isOwner = c.owner === user;
+            if (c) {
                 const subbed = mySubs.includes(activeChat.id);
-                
-                document.getElementById('editChannelBtn').classList.toggle('hidden', !isOwner);
+                const isOwner = c.owner === user;
                 document.getElementById('leaveChannelBtn').classList.toggle('hidden', isOwner || !subbed);
-                
-                if (isOwner) {
-                    document.getElementById('messageControls').classList.remove('hidden');
-                    document.getElementById('subscriberControls').classList.add('hidden');
-                } else {
-                    document.getElementById('messageControls').classList.add('hidden');
-                    document.getElementById('subscriberControls').classList.remove('hidden');
-                    
-                    if (subbed) {
-                        document.getElementById('joinBtn').classList.add('hidden');
-                        document.getElementById('joinedLabel').classList.remove('hidden');
-                    } else {
-                        document.getElementById('joinBtn').classList.remove('hidden');
-                        document.getElementById('joinedLabel').classList.add('hidden');
-                    }
+                document.getElementById('messageControls').classList.toggle('hidden', !isOwner);
+                document.getElementById('subscriberControls').classList.toggle('hidden', isOwner);
+                if (!isOwner) {
+                    document.getElementById('joinBtn').classList.toggle('hidden', subbed);
+                    document.getElementById('joinedLabel').classList.toggle('hidden', !subbed);
                 }
-            } else {
-                headerTitle.textContent = `@${activeChat.targetUser}`;
-                avatar.textContent = activeChat.targetUser[0].toUpperCase();
-                avatar.style.background = getHashColor(activeChat.targetUser);
-                
-                const userData = allUsers.find(u => u.username === activeChat.targetUser);
-                const status = formatStatus(userData?.last_active);
-                headerMeta.textContent = status;
-                headerMeta.className = `text-[10px] md:text-xs truncate ${status === 'В сети' ? 'text-blue-500 font-bold' : 'text-gray-400'}`;
-                
-                document.getElementById('editChannelBtn').classList.add('hidden');
-                document.getElementById('leaveChannelBtn').classList.add('hidden');
-                document.getElementById('messageControls').classList.remove('hidden');
-                document.getElementById('subscriberControls').classList.add('hidden');
             }
         }
+
+        window.openProfile = () => {
+            renderProfileContent();
+            document.getElementById('profileModal').style.display = 'flex';
+        };
+
+        function renderProfileContent() {
+            if (!activeChat) return;
+            const isChan = activeChat.type === 'channel';
+            const c = isChan ? activeChat.data : null;
+            const isOwner = isChan && c.owner === user;
+
+            document.getElementById('profName').textContent = isChan ? c.name : `@${activeChat.targetUser}`;
+            document.getElementById('profId').textContent = isChan ? `@${c.link}` : 'Пользователь';
+            document.getElementById('profAvatar').textContent = (isChan ? c.name : activeChat.targetUser)[0].toUpperCase();
+            document.getElementById('profAvatar').style.background = getHashColor(isChan ? c.name : activeChat.targetUser);
+
+            document.getElementById('ownerEditSection').classList.toggle('hidden', !isOwner);
+            document.getElementById('subscribersSection').classList.toggle('hidden', !isOwner);
+
+            if (isOwner) {
+                document.getElementById('editNameInput').value = c.name;
+                document.getElementById('editIdInput').value = c.link;
+                document.getElementById('subCountBadge').textContent = c.subscribers?.length || 0;
+                
+                const list = document.getElementById('subsListArea');
+                list.innerHTML = '';
+                (c.subscribers || []).forEach(subId => {
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-2 bg-gray-50 rounded-xl";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:${getHashColor(subId)}">${subId[0].toUpperCase()}</div>
+                            <span class="text-sm font-medium">@${subId} ${subId === user ? '(Вы)' : ''}</span>
+                        </div>
+                        ${subId !== user ? `<button onclick="banUser('${subId}')" class="text-[10px] text-red-500 font-bold hover:bg-red-100 px-2 py-1 rounded-lg transition-colors">БАН</button>` : ''}
+                    `;
+                    list.appendChild(div);
+                });
+            }
+
+            const meta = document.getElementById('profMeta');
+            if (isChan) {
+                meta.innerHTML = `<p class="text-sm">Владелец: <b>@${c.owner}</b></p><p class="text-sm">Создан: ${c.last_msg_time ? new Date(c.last_msg_time.seconds * 1000).toLocaleDateString() : 'недавно'}</p>`;
+            } else {
+                const ud = allUsers.find(u => u.username === activeChat.targetUser);
+                meta.innerHTML = `<p class="text-sm">${formatStatus(ud?.last_active)}</p><p class="text-xs text-gray-400 mt-2">Личный чат защищен pnavkv2.</p>`;
+            }
+        }
+
+        window.banUser = async (targetId) => {
+            if (!activeChat || activeChat.type !== 'channel') return;
+            const chanId = activeChat.id;
+            // 1. Удаляем пользователя из подписчиков канала
+            await updateDoc(doc(db, ROOT, "channels", "list", chanId), { subscribers: arrayRemove(targetId) });
+            // 2. Удаляем канал из подписок пользователя
+            await updateDoc(doc(db, ROOT, "users", "list", targetId), { subs: arrayRemove(chanId) });
+            showToast(`@${targetId} исключен`);
+            renderProfileContent();
+        };
+
+        window.updateChannelData = async () => {
+            const name = document.getElementById('editNameInput').value.trim();
+            const link = document.getElementById('editIdInput').value.trim().toLowerCase().replace('@', '');
+            if (!name || !ID_REGEX.test(link)) return showToast("Некорректные данные");
+
+            const querySnap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
+            const conflict = querySnap.docs.find(d => d.id !== activeChat.id);
+            if (conflict) return showToast("Этот ID уже занят");
+
+            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { name, link });
+            showToast("Данные обновлены");
+        };
 
         window.toggleJoin = async () => {
             if (activeChat.type !== 'channel') return;
             await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(activeChat.id) });
             await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayUnion(user) });
             showToast("Вы подписались!");
-            updateUI();
         };
 
         window.leaveCurrentChannel = async () => {
-            if (!activeChat || activeChat.type !== 'channel') return;
-            const channelId = activeChat.id;
-            
-            await updateDoc(doc(db, ROOT, "users", "list", user), {
-                subs: arrayRemove(channelId)
-            });
-            
-            await updateDoc(doc(db, ROOT, "channels", "list", channelId), {
-                subscribers: arrayRemove(user)
-            });
-
-            showToast("Вы вышли из канала");
-            
-            activeChat = null;
-            document.getElementById('activeChannelContent').classList.add('hidden');
-            document.getElementById('noChannelView').classList.remove('hidden');
-            if (window.innerWidth <= 768) goBack();
-            renderChatList();
+            const id = activeChat.id;
+            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayRemove(id) });
+            await updateDoc(doc(db, ROOT, "channels", "list", id), { subscribers: arrayRemove(user) });
+            closeActiveChat();
         };
 
-        window.openEditModal = () => {
-            if (activeChat.type !== 'channel') return;
-            editingChannelId = activeChat.id;
-            document.getElementById('modalTitle').textContent = "Редактировать канал";
-            document.getElementById('channelNameInput').value = activeChat.data.name;
-            document.getElementById('channelIdInput').value = activeChat.data.link;
-            document.getElementById('channelModal').style.display='flex';
-        };
-
-        window.saveChannel = async () => {
-            const chanName = document.getElementById('channelNameInput').value.trim();
-            const chanLink = document.getElementById('channelIdInput').value.trim().toLowerCase().replace('@', '');
+        window.openCreateModal = () => document.getElementById('createChannelModal').style.display = 'flex';
+        
+        window.saveNewChannel = async () => {
+            const name = document.getElementById('createNameInput').value.trim();
+            const link = document.getElementById('createIdInput').value.trim().toLowerCase().replace('@', '');
+            if (!name || !ID_REGEX.test(link)) return showToast("Некорректные данные");
             
-            if (!chanName || !chanLink) return showToast("Заполните все поля");
-            
-            // Новая логика валидации по правилам регистрации
-            if (!ID_REGEX.test(chanLink)) {
-                return showToast("Некорректный ID (4-12 симв., латиница)");
-            }
+            const snap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
+            if (!snap.empty) return showToast("ID занят");
 
-            if (editingChannelId) {
-                // Если мы редактируем, нужно проверить, не занят ли новый линк кем-то другим
-                const querySnap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", chanLink)));
-                const conflictingChannel = querySnap.docs.find(d => d.id !== editingChannelId);
-                if (conflictingChannel) return showToast("Этот ID уже занят другим каналом");
-
-                await updateDoc(doc(db, ROOT, "channels", "list", editingChannelId), { name: chanName, link: chanLink });
-                showToast("Канал обновлен");
-                activeChat.data.name = chanName;
-                activeChat.data.link = chanLink;
-                updateUI();
-            } else {
-                // При создании проверяем на уникальность линка
-                const snap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", chanLink)));
-                if (!snap.empty) return showToast("ID занят другим каналом");
-                
-                const ref = await addDoc(collection(db, ROOT, "channels", "list"), { 
-                    name: chanName, link: chanLink, owner: user, subscribers: [user], last_msg_time: serverTimestamp(), viewedBy: [user] 
-                });
-                await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(ref.id) });
-                selectChannel(ref.id);
-            }
-            closeChannelModal();
-        };
-
-        window.closeChannelModal = () => {
-            editingChannelId = null;
-            document.getElementById('modalTitle').textContent = "Создать канал";
-            document.getElementById('channelNameInput').value = "";
-            document.getElementById('channelIdInput').value = "";
-            document.getElementById('channelModal').style.display='none';
+            const ref = await addDoc(collection(db, ROOT, "channels", "list"), { name, link, owner: user, subscribers: [user], last_msg_time: serverTimestamp(), viewedBy: [user] });
+            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(ref.id) });
+            document.getElementById('createChannelModal').style.display = 'none';
+            selectChannel(ref.id);
         };
 
         window.goBack = () => document.getElementById('appSidebar').classList.remove('hidden-mobile');
-        window.openCreateModal = () => {
-            editingChannelId = null;
-            document.getElementById('modalTitle').textContent = "Создать канал";
-            document.getElementById('channelModal').style.display='flex';
-        };
         window.logout = () => { localStorage.clear(); location.reload(); };
-        
-        window.openChannelProfile = () => {
-            if (!activeChat) return;
-            const isChan = activeChat.type === 'channel';
-            document.getElementById('profName').textContent = isChan ? activeChat.data.name : `@${activeChat.targetUser}`;
-            document.getElementById('profId').textContent = isChan ? `@${activeChat.data.link}` : 'Пользователь';
-            document.getElementById('profAvatar').textContent = (isChan ? activeChat.data.name : activeChat.targetUser)[0].toUpperCase();
-            document.getElementById('profAvatar').style.background = getHashColor(isChan ? activeChat.data.name : activeChat.targetUser);
-            
-            const meta = document.getElementById('profMeta');
-            if (isChan) {
-                meta.innerHTML = `<p class="text-sm">Владелец: @${activeChat.data.owner}</p><p class="text-sm">Подписчиков: ${activeChat.data.subscribers?.length || 0}</p>`;
-            } else {
-                const userData = allUsers.find(u => u.username === activeChat.targetUser);
-                meta.innerHTML = `<p class="text-sm">${formatStatus(userData?.last_active)}</p><p class="text-xs text-gray-400 mt-2">Личный чат защищен pnavkv2.</p>`;
-            }
-            
-            document.getElementById('profileModal').style.display = 'flex';
-        };
-
-        function showToast(t) { 
-            const el = document.getElementById('toast'); 
-            if (!el) return;
-            el.textContent = t; 
-            el.style.opacity = '1'; 
-            setTimeout(()=>el.style.opacity='0', 3000); 
-        }
-
-        function getHashColor(s) { 
-            const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; 
-            let h = 0; 
-            for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); 
-            return c[Math.abs(h) % c.length]; 
-        }
-
+        function showToast(t) { const el = document.getElementById('toast'); el.textContent = t; el.style.opacity = '1'; setTimeout(()=>el.style.opacity='0', 3000); }
+        function getHashColor(s) { const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; let h = 0; for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return c[Math.abs(h) % c.length]; }
         document.getElementById('msgInput').addEventListener('keypress', e => e.key === 'Enter' && sendMessage());
     </script>
 </body>
