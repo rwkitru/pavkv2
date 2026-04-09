@@ -54,12 +54,29 @@
         
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .msg-image { max-width: 100%; border-radius: 12px; margin-top: 4px; cursor: pointer; display: block; background: #eee; }
+        
+        .msg-image { 
+            max-width: 280px; 
+            max-height: 350px; 
+            width: auto;
+            height: auto;
+            border-radius: 12px; 
+            margin-top: 4px; 
+            cursor: pointer; 
+            display: block; 
+            background: #eee;
+            object-fit: contain;
+        }
+        @media (max-width: 480px) {
+            .msg-image {
+                max-width: 220px;
+                max-height: 300px;
+            }
+        }
     </style>
 </head>
 <body class="flex">
 
-    <!-- Auth Screen -->
     <div id="authScreen" class="fixed inset-0 bg-[#f4f7fa] z-[200] flex items-center justify-center p-4 transition-opacity duration-500">
         <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl w-full max-w-md transform transition-all duration-500 scale-100">
             <h1 class="text-2xl font-bold text-center mb-2" id="authTitle">Регистрация</h1>
@@ -77,7 +94,6 @@
         </div>
     </div>
 
-    <!-- Sidebar -->
     <aside class="sidebar" id="appSidebar" style="display:none;">
         <div class="p-4 flex items-center justify-between">
             <h2 class="text-xl font-bold">Чаты</h2>
@@ -96,7 +112,6 @@
         </div>
     </aside>
 
-    <!-- Main View -->
     <main class="main-content" id="chatView" style="display:none;">
         <div id="noChannelView" class="flex-1 flex flex-col items-center justify-center text-gray-400 px-6 text-center animate-pulse">
             <div class="bg-white p-6 rounded-full mb-4 shadow-sm">
@@ -147,7 +162,6 @@
         </div>
     </main>
 
-    <!-- Modal for Creating Channel -->
     <div id="createChannelModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) this.style.display='none'">
         <div class="bg-white p-6 rounded-3xl w-full max-w-[400px] shadow-2xl transform transition-transform">
             <h2 class="text-xl font-bold mb-2">Создать канал</h2>
@@ -163,7 +177,6 @@
         </div>
     </div>
 
-    <!-- Unified Profile Modal -->
     <div id="profileModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) this.style.display='none'">
         <div class="bg-white p-6 rounded-3xl w-full max-w-[450px] shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
             <div id="profileScrollArea" class="overflow-y-auto flex-1 pr-1">
@@ -171,7 +184,6 @@
                 <h2 id="profName" class="text-xl font-bold text-center">Имя</h2>
                 <p id="profId" class="text-blue-500 mb-6 text-center">@id</p>
                 
-                <!-- Owner Controls (Editing) -->
                 <div id="ownerEditSection" class="hidden space-y-4 mb-6 border-t pt-4">
                     <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Настройки канала</h4>
                     <input type="text" id="editNameInput" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-blue-400 text-sm" placeholder="Название">
@@ -179,7 +191,6 @@
                     <button onclick="updateChannelData()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold btn-animate text-sm">Сохранить изменения</button>
                 </div>
 
-                <!-- Subscribers List (Owner Only) -->
                 <div id="subscribersSection" class="hidden border-t pt-4">
                     <div class="flex items-center justify-between mb-3">
                         <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Участники</h4>
@@ -188,7 +199,6 @@
                     <div id="subsListArea" class="space-y-2"></div>
                 </div>
 
-                <!-- Basic Meta (For everyone) -->
                 <div id="profMeta" class="text-left border-t pt-4 space-y-2"></div>
             </div>
             <button onclick="document.getElementById('profileModal').style.display='none'" class="mt-6 w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold btn-animate">Закрыть</button>
@@ -199,8 +209,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBAFGyrgliehm-cfJG91QkQRvUGACPP8rA",
@@ -228,9 +238,21 @@
         let lastMessageTimestamps = {};
         let unreadStates = {}; 
 
-        const savedUser = localStorage.getItem('pnavkv2_user');
-        if (savedUser) loginAs(savedUser);
-        signInAnonymously(auth);
+        const initAuth = async () => {
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, (fbUser) => {
+            const savedUser = localStorage.getItem('pnavkv2_user');
+            if (savedUser) {
+                loginAs(savedUser);
+            }
+        });
 
         window.toggleAuthMode = () => {
             authMode = authMode === 'register' ? 'login' : 'register';
@@ -256,9 +278,24 @@
             
             const uRef = doc(db, ROOT, "users", "list", nameInput);
             const snap = await getDoc(uRef);
+            
             if (authMode === 'register') {
                 if (snap.exists()) return showToast("Ник занят");
+                
+                // --- ЛИМИТ: 1 аккаунт на устройство ---
+                let localAccounts = JSON.parse(localStorage.getItem('pnavkv2_created_accounts') || "[]");
+                if (localAccounts.length >= 1 && !localAccounts.includes(nameInput)) {
+                    return showToast("Лимит: 1 аккаунт на устройство");
+                }
+                // --------------------------------------
+
                 await setDoc(uRef, { username: nameInput, password: pass, subs: [], type: 'user', last_active: serverTimestamp() });
+                
+                if (!localAccounts.includes(nameInput)) {
+                    localAccounts.push(nameInput);
+                    localStorage.setItem('pnavkv2_created_accounts', JSON.stringify(localAccounts));
+                }
+                
                 loginAs(nameInput);
             } else {
                 if (!snap.exists() || snap.data().password !== pass) return showToast("Ошибка входа");
@@ -335,7 +372,9 @@
 
         window.renderChatList = () => {
             const list = document.getElementById('chatListArea');
-            const search = document.getElementById('searchInput').value.toLowerCase().replace('@', '');
+            const searchInput = document.getElementById('searchInput');
+            if (!searchInput) return;
+            const search = searchInput.value.toLowerCase().replace('@', '');
             list.innerHTML = '';
 
             let items = (search.length > 0) 
@@ -377,7 +416,14 @@
             const chatId = [user, targetUser].sort().join("_v_");
             activeChat = { id: chatId, type: 'direct', targetUser };
             updateUI();
-            updateDoc(doc(db, ROOT, "direct_chats", "list", chatId), { viewedBy: arrayUnion(user) });
+            
+            const chatRef = doc(db, ROOT, "direct_chats", "list", chatId);
+            const chatSnap = await getDoc(chatRef);
+            if (!chatSnap.exists()) {
+                await setDoc(chatRef, { members: [user, targetUser], last_msg_time: serverTimestamp() });
+            }
+
+            updateDoc(chatRef, { viewedBy: arrayUnion(user) });
             subscribeToMessages(collection(db, ROOT, "direct_chats", "list", chatId, "messages"));
         };
 
@@ -386,6 +432,27 @@
             window.msgUnsub = onSnapshot(colRef, (s) => {
                 const msgs = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.time?.toMillis() || 0) - (b.time?.toMillis() || 0));
                 renderMessages(msgs);
+                
+                // --- ЛОГИКА ПРОСМОТРОВ С КУЛДАУНОМ ---
+                if (activeChat.type === 'channel') {
+                    const cooldowns = JSON.parse(localStorage.getItem('pnavkv2_view_cooldowns') || "{}");
+                    const now = Date.now();
+                    const FIVE_MIN = 5 * 60 * 1000;
+
+                    msgs.forEach(m => {
+                        const lastView = cooldowns[m.id] || 0;
+                        if (now - lastView > FIVE_MIN) {
+                            const msgDocRef = doc(db, ROOT, "channels", "list", activeChat.id, "messages", m.id);
+                            updateDoc(msgDocRef, { 
+                                viewedBy: arrayUnion(user),
+                                viewCount: increment(1) 
+                            });
+                            cooldowns[m.id] = now;
+                        }
+                    });
+                    localStorage.setItem('pnavkv2_view_cooldowns', JSON.stringify(cooldowns));
+                }
+                // -------------------------------------
             });
             if (window.innerWidth <= 768) document.getElementById('appSidebar').classList.add('hidden-mobile');
             renderChatList();
@@ -411,7 +478,7 @@
                     ${!isMine && activeChat.type === 'channel' ? `<div class="text-[10px] font-bold text-blue-600 mb-1">@${m.sender}</div>` : ''}
                     ${contentHTML}
                     <div class="flex items-center justify-end gap-2 mt-1">
-                        ${activeChat.type === 'channel' ? `<div class="views-badge"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg><span>${m.viewedBy?.length || 0}</span></div>` : ''}
+                        ${activeChat.type === 'channel' ? `<div class="views-badge"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg><span>${m.viewCount || (m.viewedBy?.length || 0)}</span></div>` : ''}
                         <div class="text-[9px] ${isMine ? 'text-blue-100' : 'text-gray-400'}">${m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...'}</div>
                     </div>`;
                 area.appendChild(div);
@@ -448,13 +515,22 @@
             const msgData = { 
                 sender: user, 
                 time: serverTimestamp(), 
-                viewedBy: [user] 
+                viewedBy: [user],
+                viewCount: isChan ? 1 : 0 // Сразу 1 просмотр при создании в канале
             };
             if (text) msgData.text = text;
             if (imgData) msgData.image = imgData;
 
             try {
-                await addDoc(msgCol, msgData);
+                const newMsgRef = await addDoc(msgCol, msgData);
+                
+                // Установка кулдауна для создателя, чтобы он не накрутил себе сразу +1 просмотр через subscribe
+                if(isChan) {
+                    const cooldowns = JSON.parse(localStorage.getItem('pnavkv2_view_cooldowns') || "{}");
+                    cooldowns[newMsgRef.id] = Date.now();
+                    localStorage.setItem('pnavkv2_view_cooldowns', JSON.stringify(cooldowns));
+                }
+
                 await setDoc(chatDoc, { 
                     last_msg_time: serverTimestamp(), 
                     last_msg_by: user, 
@@ -474,8 +550,12 @@
             
             document.getElementById('headerTitle').textContent = c ? c.name : `@${activeChat.targetUser}`;
             document.getElementById('headerMeta').textContent = c ? `@${c.link} • ${c.subscribers?.length || 0} подп.` : formatStatus(allUsers.find(u => u.username === activeChat.targetUser)?.last_active);
-            document.getElementById('headerAvatar').textContent = (c ? c.name : activeChat.targetUser)[0].toUpperCase();
-            document.getElementById('headerAvatar').style.background = getHashColor(c ? c.name : activeChat.targetUser);
+            const avatarChar = (c ? c.name : activeChat.targetUser)[0].toUpperCase();
+            const avatarBg = getHashColor(c ? c.name : activeChat.targetUser);
+            
+            const headerAvatar = document.getElementById('headerAvatar');
+            headerAvatar.textContent = avatarChar;
+            headerAvatar.style.background = avatarBg;
             
             if (c) {
                 const subbed = mySubs.includes(activeChat.id);
@@ -576,7 +656,9 @@
             const id = activeChat.id;
             await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayRemove(id) });
             await updateDoc(doc(db, ROOT, "channels", "list", id), { subscribers: arrayRemove(user) });
-            closeActiveChat();
+            document.getElementById('noChannelView').classList.remove('hidden');
+            document.getElementById('activeChannelContent').classList.add('hidden');
+            activeChat = null;
         };
 
         window.openCreateModal = () => document.getElementById('createChannelModal').style.display = 'flex';
@@ -596,9 +678,30 @@
         };
 
         window.goBack = () => document.getElementById('appSidebar').classList.remove('hidden-mobile');
-        window.logout = () => { localStorage.clear(); location.reload(); };
-        function showToast(t) { const el = document.getElementById('toast'); el.textContent = t; el.style.opacity = '1'; setTimeout(()=>el.style.opacity='0', 3000); }
-        function getHashColor(s) { const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; let h = 0; for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return c[Math.abs(h) % c.length]; }
+        
+        window.logout = () => { 
+            localStorage.clear(); 
+            location.reload(); 
+        };
+
+        function showToast(t) { 
+            const el = document.getElementById('toast'); 
+            el.textContent = t; 
+            el.style.opacity = '1'; 
+            el.style.pointerEvents = 'auto';
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.pointerEvents = 'none';
+            }, 3000); 
+        }
+
+        function getHashColor(s) { 
+            const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; 
+            let h = 0; 
+            for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); 
+            return c[Math.abs(h) % c.length]; 
+        }
+
         document.getElementById('msgInput').addEventListener('keypress', e => e.key === 'Enter' && sendMessage());
     </script>
 </body>
