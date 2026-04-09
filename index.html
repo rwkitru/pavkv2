@@ -54,6 +54,7 @@
         
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .msg-image { max-width: 100%; border-radius: 12px; margin-top: 4px; cursor: pointer; display: block; background: #eee; }
     </style>
 </head>
 <body class="flex">
@@ -129,6 +130,10 @@
             
             <footer id="chatFooter" class="bg-white p-3 border-t">
                 <div id="messageControls" class="flex items-center gap-2">
+                    <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageUpload(this)">
+                    <button onclick="document.getElementById('imageInput').click()" class="text-gray-400 hover:text-blue-600 transition-colors p-1" title="Прикрепить фото">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                    </button>
                     <input type="text" id="msgInput" placeholder="Напишите сообщение..." class="flex-1 bg-gray-100 p-3 rounded-2xl outline-none text-sm border border-transparent focus:border-blue-200 focus:bg-white transition-all">
                     <button onclick="sendMessage()" class="bg-blue-600 text-white p-2.5 rounded-full btn-animate shadow-sm">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -304,10 +309,6 @@
                     const data = s.data();
                     mySubs = data.subs || []; 
                     renderChatList(); 
-                    // Если текущий открытый канал пропал из подписок (был забанен), закрываем его
-                    if (activeChat && activeChat.type === 'channel' && activeChat.data.owner !== user && !mySubs.includes(activeChat.id)) {
-                        closeActiveChat();
-                    }
                 }
             });
 
@@ -317,13 +318,9 @@
                     lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
                     unreadStates[d.id] = data.last_msg_by && data.last_msg_by !== user && (!data.viewedBy || !data.viewedBy.includes(user));
                     const chanObj = { id: d.id, ...data, type: 'channel' };
-                    // Обновляем данные активного чата в реальном времени
                     if (activeChat && activeChat.id === d.id) {
                         activeChat.data = chanObj;
                         updateUI();
-                        if (document.getElementById('profileModal').style.display === 'flex') {
-                            renderProfileContent();
-                        }
                     }
                     return chanObj;
                 });
@@ -333,16 +330,7 @@
             onSnapshot(collection(db, ROOT, "users", "list"), (s) => {
                 allUsers = s.docs.map(d => ({ id: d.id, ...d.data(), type: 'user' }));
                 renderChatList();
-                if (activeChat?.type === 'direct') updateUI();
             });
-        }
-
-        function closeActiveChat() {
-            activeChat = null;
-            document.getElementById('activeChannelContent').classList.add('hidden');
-            document.getElementById('noChannelView').classList.remove('hidden');
-            if (window.innerWidth <= 768) goBack();
-            renderChatList();
         }
 
         window.renderChatList = () => {
@@ -410,9 +398,18 @@
                 const isMine = m.sender === user;
                 const div = document.createElement('div');
                 div.className = `message-bubble ${isMine ? 'mine' : ''}`;
+                
+                let contentHTML = '';
+                if (m.image) {
+                    contentHTML += `<img src="${m.image}" class="msg-image" onclick="window.open('${m.image}')" onerror="this.src='https://via.placeholder.com/300?text=Ошибка+загрузки'"/>`;
+                }
+                if (m.text) {
+                    contentHTML += `<div class="break-words ${m.image ? 'mt-2' : ''}">${m.text}</div>`;
+                }
+
                 div.innerHTML = `
                     ${!isMine && activeChat.type === 'channel' ? `<div class="text-[10px] font-bold text-blue-600 mb-1">@${m.sender}</div>` : ''}
-                    <div class="break-words">${m.text}</div>
+                    ${contentHTML}
                     <div class="flex items-center justify-end gap-2 mt-1">
                         ${activeChat.type === 'channel' ? `<div class="views-badge"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg><span>${m.viewedBy?.length || 0}</span></div>` : ''}
                         <div class="text-[9px] ${isMine ? 'text-blue-100' : 'text-gray-400'}">${m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...'}</div>
@@ -422,15 +419,51 @@
             area.scrollTop = area.scrollHeight;
         }
 
-        window.sendMessage = async () => {
+        window.handleImageUpload = (input) => {
+            const file = input.files[0];
+            if (!file) return;
+            if (file.size > 1.5 * 1024 * 1024) return showToast("Размер фото не должен превышать 1.5MB");
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                sendMessage(e.target.result);
+                input.value = '';
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.sendMessage = async (imgData = null) => {
             const input = document.getElementById('msgInput');
             const text = input.value.trim();
-            if (!text || !activeChat) return;
+            if (!text && !imgData || !activeChat) return;
+            
+            const currentChat = { ...activeChat };
             input.value = '';
-            const isChan = activeChat.type === 'channel';
-            const col = collection(db, ROOT, isChan ? "channels" : "direct_chats", "list", activeChat.id, "messages");
-            await addDoc(col, { text, sender: user, time: serverTimestamp(), viewedBy: [user] });
-            await setDoc(doc(db, ROOT, isChan ? "channels" : "direct_chats", "list", activeChat.id), { last_msg_time: serverTimestamp(), last_msg_by: user, viewedBy: [user] }, { merge: true });
+
+            const isChan = currentChat.type === 'channel';
+            const colPath = isChan ? "channels" : "direct_chats";
+            const msgCol = collection(db, ROOT, colPath, "list", currentChat.id, "messages");
+            const chatDoc = doc(db, ROOT, colPath, "list", currentChat.id);
+
+            const msgData = { 
+                sender: user, 
+                time: serverTimestamp(), 
+                viewedBy: [user] 
+            };
+            if (text) msgData.text = text;
+            if (imgData) msgData.image = imgData;
+
+            try {
+                await addDoc(msgCol, msgData);
+                await setDoc(chatDoc, { 
+                    last_msg_time: serverTimestamp(), 
+                    last_msg_by: user, 
+                    viewedBy: [user] 
+                }, { merge: true });
+            } catch (e) {
+                showToast("Ошибка отправки");
+                console.error(e);
+            }
         };
 
         function updateUI() {
@@ -454,6 +487,10 @@
                     document.getElementById('joinBtn').classList.toggle('hidden', subbed);
                     document.getElementById('joinedLabel').classList.toggle('hidden', !subbed);
                 }
+            } else {
+                document.getElementById('messageControls').classList.remove('hidden');
+                document.getElementById('subscriberControls').classList.add('hidden');
+                document.getElementById('leaveChannelBtn').classList.add('hidden');
             }
         }
 
@@ -509,9 +546,7 @@
         window.banUser = async (targetId) => {
             if (!activeChat || activeChat.type !== 'channel') return;
             const chanId = activeChat.id;
-            // 1. Удаляем пользователя из подписчиков канала
             await updateDoc(doc(db, ROOT, "channels", "list", chanId), { subscribers: arrayRemove(targetId) });
-            // 2. Удаляем канал из подписок пользователя
             await updateDoc(doc(db, ROOT, "users", "list", targetId), { subs: arrayRemove(chanId) });
             showToast(`@${targetId} исключен`);
             renderProfileContent();
