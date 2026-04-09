@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>pnavkv2</title>
+    <title>pnavkv2 - Messenger</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -129,7 +129,7 @@
                 <div id="messageControls" class="flex items-center gap-2">
                     <input type="text" id="msgInput" placeholder="Напишите сообщение..." class="flex-1 bg-gray-100 p-3 rounded-2xl outline-none text-sm border border-transparent focus:border-blue-200 focus:bg-white transition-all">
                     <button onclick="sendMessage()" class="bg-blue-600 text-white p-2.5 rounded-full btn-animate shadow-sm">
-                        <svg class="w-5 h-5 transform rotate-90" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     </button>
                 </div>
                 <div id="subscriberControls" class="hidden flex flex-col items-center justify-center w-full">
@@ -258,7 +258,6 @@
             const last = lastActive.seconds * 1000;
             const diff = now - last;
             
-            // Если активность была меньше минуты назад — "В сети"
             if (diff < 60000) return "В сети";
             
             const date = new Date(last);
@@ -276,7 +275,6 @@
             document.getElementById('chatView').style.display = 'flex';
             document.getElementById('myUsername').textContent = '@' + name;
             
-            // Обновляем активность при логине и каждые 30 сек
             updateLastActive();
             setInterval(updateLastActive, 30000);
 
@@ -314,7 +312,6 @@
             onSnapshot(collection(db, ROOT, "users", "list"), (s) => {
                 allUsers = s.docs.map(d => ({ id: d.id, ...d.data(), type: 'user' }));
                 renderChatList();
-                // Обновляем UI чата, если открыт личный диалог
                 if (activeChat && activeChat.type === 'direct') updateUI();
             });
         }
@@ -402,7 +399,12 @@
             area.style.opacity = '0';
             
             window.msgUnsub = onSnapshot(colRef, (s) => {
-                const msgs = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (a.time?.seconds||0)-(b.time?.seconds||0));
+                const msgs = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => {
+                    // Исправление: сообщения без метки времени (только что отправленные) всегда внизу
+                    const timeA = a.time?.toMillis() || Date.now() + 100000;
+                    const timeB = b.time?.toMillis() || Date.now() + 100000;
+                    return timeA - timeB;
+                });
                 renderMessages(msgs);
                 area.style.opacity = '1';
                 
@@ -424,7 +426,7 @@
             area.innerHTML = '';
             msgs.forEach(m => {
                 const isMine = m.sender === user;
-                const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
                 const viewsCount = m.viewedBy ? m.viewedBy.length : 0;
                 
                 const div = document.createElement('div');
