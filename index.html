@@ -67,12 +67,7 @@
             background: #eee;
             object-fit: contain;
         }
-        @media (max-width: 480px) {
-            .msg-image {
-                max-width: 220px;
-                max-height: 300px;
-            }
-        }
+
         .verified-badge {
             display: inline-flex;
             align-items: center;
@@ -86,6 +81,25 @@
             vertical-align: middle;
         }
         .verified-badge svg { width: 10px; height: 10px; stroke-width: 4; }
+
+        /* Styles for the new announcement blocks */
+        .announcement-card {
+            margin: 8px 12px;
+            padding: 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .warning-block {
+            background: #fef2f2;
+            border: 1px solid #fee2e2;
+            color: #991b1b;
+        }
+        .download-block {
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            color: #1e40af;
+        }
     </style>
 </head>
 <body class="flex">
@@ -118,6 +132,24 @@
                 <button onclick="openCreateModal()" class="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-xl shadow-md btn-animate"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2.5"></path></svg></button>
             </div>
         </div>
+
+        <div class="announcement-card warning-block shadow-sm">
+            <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <p><b>Важное объявление:</b> Поддержка веб-версии будет прекращена <b>13 апреля</b></p>
+            </div>
+        </div>
+
+        <div class="announcement-card download-block shadow-sm">
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    <p>Клиент на Android устройства:</p>
+                </div>
+                <a href="#" class="block w-full text-center bg-blue-600 text-white py-2 rounded-lg font-bold text-xs hover:bg-blue-700 transition-colors">Скачать клиент</a>
+            </div>
+        </div>
+
         <div id="chatListArea" class="flex-1 overflow-y-auto space-y-1"></div>
         <div class="p-4 border-t bg-gray-50 flex items-center justify-between">
             <span id="myUsername" class="font-bold text-sm text-gray-500 truncate max-w-[150px]">@user</span>
@@ -238,10 +270,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // --- ПЕРЕВОД НА V8 ---
         const ROOT = "pnavkv2_v8"; 
         const APP_VERSION = "8.0";
-        // ---------------------
 
         const ID_REGEX = /^[a-z_][a-z0-9_]{3,11}$/;
         const VERIFIED_HTML = `<span class="verified-badge" title="Подтвержденный аккаунт"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>`;
@@ -258,12 +288,11 @@
         let lastRenderedChatIds = "";
 
         const initAuth = async () => {
-          // ПРИНУДИТЕЛЬНЫЙ ВЫБРОС НА РЕГИСТРАЦИЮ
           const currentVersion = localStorage.getItem('pnavkv2_app_version');
           if (currentVersion !== APP_VERSION) {
-              localStorage.clear(); // Полная очистка
+              localStorage.clear();
               localStorage.setItem('pnavkv2_app_version', APP_VERSION);
-              location.reload(); // Перезагрузка для применения очистки
+              location.reload();
               return;
           }
 
@@ -445,10 +474,8 @@
             if(activeChat?.id === id) return;
             const c = channels.find(x => x.id === id);
             activeChat = { id, type: 'channel', data: c };
-            
             lastMessagesData = []; 
             document.getElementById('messagesArea').innerHTML = '';
-            
             updateUI();
             updateDoc(doc(db, ROOT, "channels", "list", id), { viewedBy: arrayUnion(user) });
             subscribeToMessages(collection(db, ROOT, "channels", "list", id, "messages"));
@@ -458,10 +485,8 @@
             const chatId = [user, targetUser].sort().join("_v_");
             if(activeChat?.id === chatId) return;
             activeChat = { id: chatId, type: 'direct', targetUser };
-            
             lastMessagesData = [];
             document.getElementById('messagesArea').innerHTML = '';
-            
             updateUI();
             const chatRef = doc(db, ROOT, "direct_chats", "list", chatId);
             const chatSnap = await getDoc(chatRef);
