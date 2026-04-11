@@ -29,7 +29,7 @@
         
         .unread-badge { width: 12px; height: 12px; background: #3b82f6; border-radius: 50%; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); border: 2px solid white; }
 
-        .message-bubble { position: relative; max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); align-self: flex-start; animation: slideIn 0.3s ease-out; }
+        .message-bubble { position: relative; max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); align-self: flex-start; animation: slideIn 0.3s ease-out; -webkit-tap-highlight-color: transparent; user-select: none; }
         .message-bubble.mine { background: #3b82f6; color: white; border-bottom-left-radius: 18px; border-bottom-right-radius: 4px; align-self: flex-end; animation: slideInRight 0.3s ease-out; }
         
         .message-bubble.image-only { padding: 0 !important; background: transparent !important; box-shadow: none !important; border-radius: 18px !important; }
@@ -67,24 +67,31 @@
         .announcement-card { margin: 8px 12px; padding: 12px; border-radius: 16px; font-size: 13px; line-height: 1.4; }
         .download-block { background: #eff6ff; border: 1px solid #dbeafe; color: #1e40af; }
 
-        /* --- Новые стили для Reply и Меню --- */
         .reply-preview { display: none; background: white; border-top: 1px solid #eee; padding: 8px 16px; align-items: center; gap: 10px; animation: slideUp 0.2s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
         .reply-quote { background: rgba(0,0,0,0.05); border-left: 3px solid #3b82f6; padding: 4px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 13px; cursor: pointer; max-width: 100%; }
         .mine .reply-quote { background: rgba(255,255,255,0.15); border-left-color: white; color: white; }
 
-        .msg-menu-btn { opacity: 0; position: absolute; bottom: 4px; right: 4px; background: white; border-radius: 50%; width: 20px; height: 20px; display: flex; items-center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: opacity 0.2s; z-index: 10; cursor: pointer; color: #667; }
-        .message-bubble:hover .msg-menu-btn { opacity: 1; }
-        .message-bubble.image-only:hover .msg-menu-btn { right: 8px; bottom: 35px; }
-        .mine .msg-menu-btn { color: #3b82f6; }
+        /* Убраны 3 точки из пузырей, теперь используется Long Press */
 
-        .context-menu { position: fixed; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); width: 170px; z-index: 1000; overflow: hidden; transform: scale(0.9); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: top right; }
+        .context-menu { position: fixed; background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 200px; z-index: 1000; overflow: hidden; transform: scale(0.8); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: center; }
         .context-menu.active { transform: scale(1); opacity: 1; pointer-events: auto; }
-        .context-menu-item { padding: 10px 16px; font-size: 14px; color: #333; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
-        .context-menu-item:hover { background: #f8fafc; }
+        .context-menu-item { padding: 14px 18px; font-size: 15px; color: #333; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s; border-bottom: 1px solid #f8fafc; }
+        .context-menu-item:last-child { border-bottom: none; }
+        .context-menu-item:active { background: #f1f5f9; }
 
-        #mediaViewer { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        /* Стили для Pinch-to-Zoom */
+        #mediaViewer { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,1); display: none; align-items: center; justify-content: center; backdrop-filter: blur(15px); overflow: hidden; touch-action: none; }
+        #fullImg { transition: transform 0.1s ease-out; user-select: none; -webkit-user-drag: none; }
+        
+        .media-actions { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 520; }
+        .media-btn { background: rgba(255,255,255,0.15); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: white; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .media-btn:active { background: rgba(255,255,255,0.3); }
+        
+        .media-menu { position: absolute; top: 70px; right: 20px; background: rgba(30,41,59,0.9); backdrop-filter: blur(10px); border-radius: 16px; padding: 8px; display: none; flex-direction: column; gap: 4px; min-width: 140px; border: 1px solid rgba(255,255,255,0.1); z-index: 530; }
+        .media-menu-item { color: white; font-size: 14px; padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; gap: 10px; }
+        .media-menu-item:active { background: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body class="flex">
@@ -162,14 +169,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button id="channelSettingsBtn" onclick="openProfile()" class="hidden p-2 text-gray-400 hover:text-blue-600 rounded-lg transition-colors btn-animate" title="Настройки канала">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    </button>
-                    <button id="leaveChannelBtn" onclick="leaveCurrentChannel()" class="hidden p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors btn-animate" title="Выйти из канала">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                    </button>
-                </div>
             </header>
             
             <div id="messagesArea" class="p-3 md:p-4"></div>
@@ -194,35 +193,43 @@
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     </button>
                 </div>
-                <div id="subscriberControls" class="hidden flex flex-col items-center justify-center w-full p-3">
-                    <button id="joinBtn" onclick="toggleJoin()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold btn-animate shadow-sm text-sm">Вступить в канал</button>
-                    <p id="joinedLabel" class="hidden text-gray-500 text-sm font-bold py-2">Вы подписаны</p>
-                </div>
             </footer>
         </div>
     </main>
 
     <div id="msgContextMenu" class="context-menu">
         <div class="context-menu-item" id="ctxReply">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" stroke-width="2"/></svg>
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" stroke-width="2"/></svg>
             Ответить
         </div>
         <div class="context-menu-item" id="ctxCopy">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2" stroke-width="2"/></svg>
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2" stroke-width="2"/></svg>
             Копировать
         </div>
     </div>
 
     <div id="mediaViewer">
-        <button onclick="closeMedia()" class="absolute top-6 right-6 text-white/70 hover:text-white transition-colors z-[510]">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5"/></svg>
-        </button>
-        <img id="fullImg" class="max-w-[95%] max-h-[85%] object-contain rounded-lg shadow-2xl transition-transform" style="cursor: zoom-in;" onclick="this.style.transform = this.style.transform === 'scale(1.5)' ? 'scale(1)' : 'scale(1.5)'">
-        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-4">
-            <a id="imgDl" href="#" download="image.jpg" class="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-full backdrop-blur-md transition-all font-medium flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-width="2"/></svg> Сохранить
+        <div class="media-actions">
+            <button class="media-btn" id="mediaMoreBtn">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2 s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            </button>
+            <button onclick="closeMedia()" class="media-btn">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5"/></svg>
+            </button>
+        </div>
+
+        <div id="mediaOptions" class="media-menu">
+            <div class="media-menu-item" id="mediaReply">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" stroke-width="2"/></svg>
+                Ответить
+            </div>
+            <a id="imgDl" href="#" download="image.jpg" class="media-menu-item">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-width="2"/></svg>
+                Скачать
             </a>
         </div>
+
+        <img id="fullImg" class="max-w-full max-h-full object-contain" src="">
     </div>
 
     <div id="settingsModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) this.style.display='none'">
@@ -333,7 +340,6 @@
         let lastRenderedChatIds = "";
         let newAvatarBase64 = null;
 
-        // --- Переменные для Reply ---
         let replyTo = null;
 
         const initAuth = async () => {
@@ -609,7 +615,7 @@
                 }
 
                 let contentHTML = '';
-                if (m.image) contentHTML += `<img src="${m.image}" class="msg-image" onclick="openMedia('${m.image}')"/>`;
+                if (m.image) contentHTML += `<img src="${m.image}" class="msg-image" onclick="openMedia('${m.image}', '${m.id}', '${senderName}')"/>`;
                 if (m.text) contentHTML += `<div class="break-words ${m.image ? 'mt-2' : ''}">${m.text}</div>`;
                 
                 const viewsHTML = (activeChat.type === 'channel') ? `
@@ -619,7 +625,11 @@
                     </div>` : '';
 
                 return `
-                <div class="message-bubble ${isMine ? 'mine' : ''} ${isImageOnly ? 'image-only' : ''}" data-msg-id="${m.id}">
+                <div class="message-bubble ${isMine ? 'mine' : ''} ${isImageOnly ? 'image-only' : ''}" 
+                     data-msg-id="${m.id}" 
+                     oncontextmenu="handleLongPress(event, '${m.id}', '${senderName}', '${(m.text || '').replace(/'/g, "\\'")}', ${!!m.image})"
+                     ontouchstart="startTouch(event, '${m.id}', '${senderName}', '${(m.text || '').replace(/'/g, "\\'")}', ${!!m.image})"
+                     ontouchend="endTouch()">
                     ${!isMine && activeChat.type === 'channel' && !isImageOnly ? `<div class="text-[10px] font-bold text-blue-600 mb-1 flex items-center">${senderName} ${senderData?.isVerified ? VERIFIED_HTML : ''}</div>` : ''}
                     ${replyHTML}
                     ${contentHTML}
@@ -627,39 +637,100 @@
                         ${viewsHTML}
                         <div class="msg-time text-[9px] font-medium ${!isImageOnly && isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
                     </div>
-                    <div class="msg-menu-btn" onclick="showMsgMenu(event, '${m.id}', '${senderName}', '${(m.text || '').replace(/'/g, "\\'")}', ${!!m.image})">
-                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                    </div>
                 </div>`;
             }).join('');
             area.scrollTop = area.scrollHeight;
         }
 
-        // --- Функции для фото ---
-        window.openMedia = (src) => {
-            const mv = document.getElementById('mediaViewer');
-            document.getElementById('fullImg').src = src;
-            document.getElementById('imgDl').href = src;
-            mv.style.display = 'flex';
+        // --- Обработка Long Press (Удаление 3 точек) ---
+        let touchTimer;
+        window.startTouch = (e, id, sender, text, hasImg) => {
+            touchTimer = setTimeout(() => {
+                showMsgMenu(e.touches[0].clientX, e.touches[0].clientY, id, sender, text, hasImg);
+            }, 500);
         };
-        window.closeMedia = () => document.getElementById('mediaViewer').style.display = 'none';
+        window.endTouch = () => clearTimeout(touchTimer);
+        window.handleLongPress = (e, id, sender, text, hasImg) => {
+            e.preventDefault();
+            showMsgMenu(e.clientX, e.clientY, id, sender, text, hasImg);
+        };
 
-        // --- Меню сообщений ---
-        window.showMsgMenu = (e, id, sender, text, hasImg) => {
-            e.stopPropagation();
+        window.showMsgMenu = (x, y, id, sender, text, hasImg) => {
             const menu = document.getElementById('msgContextMenu');
-            menu.style.top = `${e.clientY}px`;
-            menu.style.left = `${e.clientX - 170}px`;
+            const menuW = 200;
+            const menuH = 100;
+            
+            // Умное позиционирование меню, чтобы не вылетало за экран
+            let left = x - 20;
+            let top = y - 20;
+            if (x + menuW > window.innerWidth) left = x - menuW + 20;
+            if (y + menuH > window.innerHeight) top = y - menuH;
+
+            menu.style.top = `${top}px`;
+            menu.style.left = `${left}px`;
             menu.classList.add('active');
 
             document.getElementById('ctxReply').onclick = () => { initReply(id, sender, text, hasImg); menu.classList.remove('active'); };
-            document.getElementById('ctxCopy').onclick = () => { navigator.clipboard.writeText(text); showToast("Скопировано"); menu.classList.remove('active'); };
+            document.getElementById('ctxCopy').onclick = () => { 
+                if(!text && hasImg) { showToast("Это фото без текста"); }
+                else { navigator.clipboard.writeText(text); showToast("Скопировано"); }
+                menu.classList.remove('active'); 
+            };
 
             const close = () => { menu.classList.remove('active'); document.removeEventListener('click', close); };
             setTimeout(() => document.addEventListener('click', close), 10);
         };
 
-        // --- Reply Функции ---
+        // --- Pinch to Zoom & Media Viewer ---
+        let scale = 1, lastScale = 1;
+        let startDist = 0;
+        const img = document.getElementById('fullImg');
+        const viewer = document.getElementById('mediaViewer');
+
+        window.openMedia = (src, id, sender) => {
+            img.src = src;
+            document.getElementById('imgDl').href = src;
+            viewer.style.display = 'flex';
+            scale = 1; lastScale = 1;
+            img.style.transform = `scale(1)`;
+            
+            // Настройка кнопки ответа в фото
+            document.getElementById('mediaReply').onclick = () => {
+                initReply(id, sender, "Фотография", true);
+                closeMedia();
+            };
+        };
+
+        viewer.addEventListener('touchstart', e => {
+            if (e.touches.length === 2) {
+                startDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            }
+        });
+
+        viewer.addEventListener('touchmove', e => {
+            if (e.touches.length === 2) {
+                const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                scale = Math.min(Math.max(1, lastScale * (dist / startDist)), 4);
+                img.style.transform = `scale(${scale})`;
+            }
+        });
+
+        viewer.addEventListener('touchend', e => {
+            lastScale = scale;
+        });
+
+        // Меню внутри просмотра фото
+        const mediaMoreBtn = document.getElementById('mediaMoreBtn');
+        const mediaOptions = document.getElementById('mediaOptions');
+        mediaMoreBtn.onclick = (e) => {
+            e.stopPropagation();
+            mediaOptions.style.display = mediaOptions.style.display === 'flex' ? 'none' : 'flex';
+        };
+        viewer.onclick = () => { mediaOptions.style.display = 'none'; };
+
+        window.closeMedia = () => { viewer.style.display = 'none'; mediaOptions.style.display = 'none'; };
+
+        // --- Остальные функции (без изменений) ---
         window.initReply = (id, sender, text, hasImg) => {
             replyTo = { id, sender, text: hasImg ? "Фотография" : text };
             document.getElementById('replyTargetUser').textContent = sender;
@@ -740,7 +811,7 @@
             const text = input.value.trim();
             if (!text && !imgData || !activeChat) return;
             const currentChat = { ...activeChat };
-            const currentReply = replyTo ? { ...replyTo } : null; // Фиксируем reply перед очисткой
+            const currentReply = replyTo ? { ...replyTo } : null; 
             
             input.value = '';
             cancelReply();
@@ -779,18 +850,10 @@
             if(avatarImg) { headerAvatar.style.backgroundImage = `url(${avatarImg})`; headerAvatar.textContent = ''; }
             else { headerAvatar.style.backgroundImage = ''; headerAvatar.textContent = (c ? c.name : activeChat.targetUser)[0].toUpperCase(); headerAvatar.style.backgroundColor = getHashColor(c ? c.name : activeChat.targetUser); }
             if (c) {
-                const subbed = mySubs.includes(activeChat.id);
                 const isOwner = c.owner === user;
-                document.getElementById('channelSettingsBtn').classList.toggle('hidden', !isOwner);
-                document.getElementById('leaveChannelBtn').classList.toggle('hidden', isOwner || !subbed);
-                document.getElementById('messageControls').classList.toggle('hidden', !isOwner);
-                document.getElementById('subscriberControls').classList.toggle('hidden', isOwner);
-                if (!isOwner) { document.getElementById('joinBtn').classList.toggle('hidden', subbed); document.getElementById('joinedLabel').classList.toggle('hidden', !subbed); }
+                document.getElementById('messageControls').classList.toggle('hidden', !isOwner && !mySubs.includes(activeChat.id));
             } else {
-                document.getElementById('channelSettingsBtn').classList.add('hidden');
                 document.getElementById('messageControls').classList.remove('hidden');
-                document.getElementById('subscriberControls').classList.add('hidden');
-                document.getElementById('leaveChannelBtn').classList.add('hidden');
             }
         }
 
