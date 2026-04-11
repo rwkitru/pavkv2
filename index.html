@@ -506,7 +506,7 @@
             renderChatList();
         }
 
-        let lastMessagesData = []; 
+let lastMessagesData = []; 
         function renderMessages(msgs) {
             const area = document.getElementById('messagesArea');
             if (msgs.length === 0) {
@@ -521,7 +521,13 @@
                 return timeA - timeB;
             });
 
-            if (sortedMsgs.length !== lastMessagesData.length) {
+            // Проверяем, изменилось ли количество сообщений ИЛИ статус времени (пометка "...")
+            const hasStatusChange = sortedMsgs.some((m, idx) => {
+                const oldM = lastMessagesData[idx];
+                return oldM && (!!m.time !== !!oldM.time);
+            });
+
+            if (sortedMsgs.length !== lastMessagesData.length || hasStatusChange) {
                 area.innerHTML = sortedMsgs.map(m => {
                     const isMine = m.sender === user;
                     const senderData = allUsers.find(u => u.username === m.sender);
