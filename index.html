@@ -42,6 +42,9 @@
         .message-bubble.image-only .msg-image { margin: 0 !important; border-radius: 18px !important; display: block; }
         .message-bubble.image-only .msg-meta-overlay { position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.45); padding: 2px 8px; border-radius: 10px; color: white !important; backdrop-filter: blur(4px); display: flex; align-items: center; gap: 6px; z-index: 5; }
 
+        .reaction-badge { position: absolute; bottom: -8px; left: 10px; background: white; padding: 2px 6px; border-radius: 10px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; display: flex; align-items: center; gap: 2px; z-index: 10; border: 1px solid #f1f5f9; }
+        .mine .reaction-badge { left: auto; right: 10px; }
+
         .views-badge { display: flex; align-items: center; gap: 3px; font-size: 10px; color: #94a3b8; }
         .mine .views-badge { color: #bfdbfe; }
 
@@ -81,9 +84,10 @@
 
         .context-menu { position: fixed; background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 200px; z-index: 1000; overflow: hidden; transform: scale(0.8); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: center; }
         .context-menu.active { transform: scale(1); opacity: 1; pointer-events: auto; }
-        .context-menu-item { padding: 14px 18px; font-size: 15px; color: #333; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s; border-bottom: 1px solid #f8fafc; }
+        .context-menu-item { padding: 12px 18px; font-size: 14px; color: #333; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s; border-bottom: 1px solid #f8fafc; }
         .context-menu-item:last-child { border-bottom: none; }
         .context-menu-item:active { background: #f1f5f9; }
+        .context-menu-item.danger { color: #ef4444; }
 
         /* Media Viewer Styles */
         #mediaViewer { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; backdrop-filter: blur(15px); overflow: hidden; touch-action: none; cursor: grab; }
@@ -211,6 +215,10 @@
     </main>
 
     <div id="msgContextMenu" class="context-menu">
+        <div class="context-menu-item" id="ctxReaction">
+            <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            Реакция ❤️
+        </div>
         <div class="context-menu-item" id="ctxReply">
             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" stroke-width="2"/></svg>
             Ответить
@@ -218,6 +226,14 @@
         <div class="context-menu-item" id="ctxCopy">
             <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2" stroke-width="2"/></svg>
             Копировать
+        </div>
+        <div class="context-menu-item" id="ctxEdit">
+            <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2"/></svg>
+            Изменить
+        </div>
+        <div class="context-menu-item danger" id="ctxDelete">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
+            Удалить
         </div>
     </div>
 
@@ -353,6 +369,7 @@
         let lastRenderedChatIds = "";
         let newAvatarBase64 = null;
         let replyTo = null;
+        let editingMsgId = null;
 
         const initAuth = async () => {
           const currentVersion = localStorage.getItem('pnavkv2_app_version');
@@ -628,7 +645,7 @@
 
                 let contentHTML = '';
                 if (m.image) contentHTML += `<img src="${m.image}" class="msg-image" onclick="openMedia('${m.image}', '${m.id}', '${senderName}')"/>`;
-                if (m.text) contentHTML += `<div class="break-words ${m.image ? 'mt-2' : ''}">${m.text}</div>`;
+                if (m.text) contentHTML += `<div class="break-words ${m.image ? 'mt-2' : ''}">${m.text} ${m.isEdited ? '<span class="text-[9px] opacity-50 italic">(изм.)</span>' : ''}</div>`;
                 
                 const viewsHTML = (activeChat.type === 'channel') ? `
                     <div class="views-badge flex items-center gap-1 opacity-70">
@@ -636,11 +653,17 @@
                         <span class="text-[9px] font-bold">${m.viewCount || 0}</span>
                     </div>` : '';
 
+                let reactionHTML = '';
+                if (m.likes && m.likes.length > 0) {
+                    reactionHTML = `<div class="reaction-badge" onclick="toggleReaction('${m.id}')">❤️ ${m.likes.length}</div>`;
+                }
+
                 return `
                 <div class="message-bubble ${isMine ? 'mine' : ''} ${isImageOnly ? 'image-only' : ''}" 
                      data-msg-id="${m.id}" 
-                     oncontextmenu="handleLongPress(event, '${m.id}', '${senderName}', '${(m.text || '').replace(/'/g, "\\'")}', ${!!m.image})"
-                     ontouchstart="startTouch(event, '${m.id}', '${senderName}', '${(m.text || '').replace(/'/g, "\\'")}', ${!!m.image})"
+                     ondblclick="toggleReaction('${m.id}')"
+                     oncontextmenu="handleLongPress(event, '${m.id}', '${senderName}', '${(m.text || '').replace(/'/g, "\\'")}', ${!!m.image}, ${isMine})"
+                     ontouchstart="startTouch(event, '${m.id}', '${senderName}', '${(m.text || '').replace(/'/g, "\\'")}', ${!!m.image}, ${isMine})"
                      ontouchend="endTouch()">
                     ${!isMine && activeChat.type === 'channel' && !isImageOnly ? `<div class="text-[10px] font-bold text-blue-600 mb-1 flex items-center">${senderName} ${senderData?.isVerified ? VERIFIED_HTML : ''}</div>` : ''}
                     ${replyHTML}
@@ -649,6 +672,7 @@
                         ${viewsHTML}
                         <div class="msg-time text-[9px] font-medium ${!isImageOnly && isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
                     </div>
+                    ${reactionHTML}
                 </div>`;
             }).join('');
             area.scrollTop = area.scrollHeight;
@@ -656,34 +680,43 @@
 
         // --- Обработка Long Press ---
         let touchTimer;
-        window.startTouch = (e, id, sender, text, hasImg) => {
+        window.startTouch = (e, id, sender, text, hasImg, isMine) => {
             touchTimer = setTimeout(() => {
-                showMsgMenu(e.touches[0].clientX, e.touches[0].clientY, id, sender, text, hasImg);
+                showMsgMenu(e.touches[0].clientX, e.touches[0].clientY, id, sender, text, hasImg, isMine);
             }, 500);
         };
         window.endTouch = () => clearTimeout(touchTimer);
-        window.handleLongPress = (e, id, sender, text, hasImg) => {
+        window.handleLongPress = (e, id, sender, text, hasImg, isMine) => {
             e.preventDefault();
-            showMsgMenu(e.clientX, e.clientY, id, sender, text, hasImg);
+            showMsgMenu(e.clientX, e.clientY, id, sender, text, hasImg, isMine);
         };
 
-        window.showMsgMenu = (x, y, id, sender, text, hasImg) => {
+        window.showMsgMenu = (x, y, id, sender, text, hasImg, isMine) => {
             const menu = document.getElementById('msgContextMenu');
             const menuW = 200;
-            const menuH = 100;
+            const menuH = 150;
             let left = x - 20;
             let top = y - 20;
             if (x + menuW > window.innerWidth) left = x - menuW + 20;
             if (y + menuH > window.innerHeight) top = y - menuH;
+            
             menu.style.top = `${top}px`;
             menu.style.left = `${left}px`;
             menu.classList.add('active');
+
+            document.getElementById('ctxEdit').style.display = (isMine && !hasImg) ? 'flex' : 'none';
+            document.getElementById('ctxDelete').style.display = isMine ? 'flex' : 'none';
+
+            document.getElementById('ctxReaction').onclick = () => { toggleReaction(id); menu.classList.remove('active'); };
             document.getElementById('ctxReply').onclick = () => { initReply(id, sender, text, hasImg); menu.classList.remove('active'); };
             document.getElementById('ctxCopy').onclick = () => { 
                 if(!text && hasImg) { showToast("Это фото без текста"); }
                 else { navigator.clipboard.writeText(text); showToast("Скопировано"); }
                 menu.classList.remove('active'); 
             };
+            document.getElementById('ctxEdit').onclick = () => { initEdit(id, text); menu.classList.remove('active'); };
+            document.getElementById('ctxDelete').onclick = () => { deleteMessage(id); menu.classList.remove('active'); };
+
             const close = () => { menu.classList.remove('active'); document.removeEventListener('click', close); };
             setTimeout(() => document.addEventListener('click', close), 10);
         };
@@ -711,7 +744,6 @@
             img.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
         }
 
-        // Управление колесиком мыши (Scale)
         viewer.addEventListener('wheel', e => {
             e.preventDefault();
             const delta = e.deltaY > 0 ? -0.2 : 0.2;
@@ -720,7 +752,6 @@
             updateImgTransform();
         }, { passive: false });
 
-        // Управление мышкой и тачем (Pan)
         const startPan = (x, y) => {
             isDragging = true;
             startX = x - offsetX;
@@ -738,7 +769,6 @@
         window.addEventListener('mousemove', e => movePan(e.clientX, e.clientY));
         window.addEventListener('mouseup', endPan);
 
-        // Pinch Zoom для телефонов
         viewer.addEventListener('touchstart', e => {
             if (e.touches.length === 2) {
                 startDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
@@ -775,7 +805,43 @@
 
         window.closeMedia = () => { viewer.style.display = 'none'; mediaOptions.style.display = 'none'; };
 
-        // --- Остальные функции ---
+        // --- Новые функции: Удаление, Редактирование, Реакции ---
+
+        window.deleteMessage = async (msgId) => {
+            if (!activeChat) return;
+            const isChan = activeChat.type === 'channel';
+            const colPath = isChan ? "channels" : "direct_chats";
+            try {
+                await deleteDoc(doc(db, ROOT, colPath, "list", activeChat.id, "messages", msgId));
+                showToast("Сообщение удалено");
+            } catch (e) { showToast("Ошибка удаления"); }
+        };
+
+        window.initEdit = (id, text) => {
+            editingMsgId = id;
+            const input = document.getElementById('msgInput');
+            input.value = text;
+            input.focus();
+            showToast("Редактирование...");
+        };
+
+        window.toggleReaction = async (msgId) => {
+            if (!activeChat) return;
+            const isChan = activeChat.type === 'channel';
+            const colPath = isChan ? "channels" : "direct_chats";
+            const msgRef = doc(db, ROOT, colPath, "list", activeChat.id, "messages", msgId);
+            const snap = await getDoc(msgRef);
+            if (!snap.exists()) return;
+            const likes = snap.data().likes || [];
+            if (likes.includes(user)) {
+                await updateDoc(msgRef, { likes: arrayRemove(user) });
+            } else {
+                await updateDoc(msgRef, { likes: arrayUnion(user) });
+            }
+        };
+
+        // --- Вспомогательные функции ---
+
         window.initReply = (id, sender, text, hasImg) => {
             replyTo = { id, sender, text: hasImg ? "Фотография" : text };
             document.getElementById('replyTargetUser').textContent = sender;
@@ -854,12 +920,27 @@
             const text = input.value.trim();
             if (!text && !imgData || !activeChat) return;
             const currentChat = { ...activeChat };
+            const isChan = currentChat.type === 'channel';
+            const colPath = isChan ? "channels" : "direct_chats";
+
+            if (editingMsgId) {
+                try {
+                    await updateDoc(doc(db, ROOT, colPath, "list", currentChat.id, "messages", editingMsgId), {
+                        text: text,
+                        isEdited: true
+                    });
+                    editingMsgId = null;
+                    input.value = '';
+                    showToast("Изменено");
+                } catch (e) { showToast("Ошибка редактирования"); }
+                return;
+            }
+
             const currentReply = replyTo ? { ...replyTo } : null; 
             input.value = '';
             cancelReply();
-            const isChan = currentChat.type === 'channel';
-            const colPath = isChan ? "channels" : "direct_chats";
-            const msgData = { sender: user, time: serverTimestamp(), viewCount: isChan ? 1 : 0, viewedBy: [user] };
+            
+            const msgData = { sender: user, time: serverTimestamp(), viewCount: isChan ? 1 : 0, viewedBy: [user], likes: [] };
             if (text) msgData.text = text;
             if (imgData) msgData.image = imgData;
             if (currentReply) msgData.replyTo = currentReply;
