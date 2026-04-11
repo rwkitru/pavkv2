@@ -521,13 +521,8 @@ let lastMessagesData = [];
                 return timeA - timeB;
             });
 
-            // Проверяем, изменилось ли количество сообщений ИЛИ статус времени (пометка "...")
-            const hasStatusChange = sortedMsgs.some((m, idx) => {
-                const oldM = lastMessagesData[idx];
-                return oldM && (!!m.time !== !!oldM.time);
-            });
-
-            if (sortedMsgs.length !== lastMessagesData.length || hasStatusChange) {
+            // Если количество сообщений изменилось (новое сообщение или первый вход) — рисуем целиком
+            if (sortedMsgs.length !== lastMessagesData.length) {
                 area.innerHTML = sortedMsgs.map(m => {
                     const isMine = m.sender === user;
                     const senderData = allUsers.find(u => u.username === m.sender);
@@ -535,26 +530,36 @@ let lastMessagesData = [];
                     let contentHTML = '';
                     if (m.image) contentHTML += `<img src="${m.image}" class="msg-image" onclick="window.open('${m.image}')" onerror="this.src='https://via.placeholder.com/300?text=Ошибка+загрузки'"/>`;
                     if (m.text) contentHTML += `<div class="break-words ${m.image ? 'mt-2' : ''}">${m.text}</div>`;
+                    
+                    const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
+
                     return `
                     <div class="message-bubble ${isMine ? 'mine' : ''}" data-msg-id="${m.id}">
                         ${!isMine && activeChat.type === 'channel' ? `<div class="text-[10px] font-bold text-blue-600 mb-1 flex items-center">@${m.sender} ${isVerified ? VERIFIED_HTML : ''}</div>` : ''}
                         ${contentHTML}
                         <div class="flex items-center justify-end gap-2 mt-1">
                             ${activeChat.type === 'channel' ? `<div class="views-badge"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg><span class="v-cnt">${m.viewCount || 0}</span></div>` : ''}
-                            <div class="text-[9px] ${isMine ? 'text-blue-100' : 'text-gray-400'}">${m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...'}</div>
+                            <div class="msg-time text-[9px] ${isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
                         </div>
                     </div>`;
                 }).join('');
                 area.scrollTop = area.scrollHeight;
             } else {
+                // Если количество то же, просто точечно обновляем данные внутри пузырьков
                 sortedMsgs.forEach((m, idx) => {
-                    const oldM = lastMessagesData[idx];
-                    if (oldM && m.viewCount !== oldM.viewCount) {
-                        const msgEl = area.querySelector(`[data-msg-id="${m.id}"]`);
-                        if (msgEl) {
-                            const countSpan = msgEl.querySelector('.v-cnt');
-                            if (countSpan) countSpan.textContent = m.viewCount || 0;
-                        }
+                    const msgEl = area.querySelector(`[data-msg-id="${m.id}"]`);
+                    if (!msgEl) return;
+
+                    // Обновляем просмотры
+                    const countSpan = msgEl.querySelector('.v-cnt');
+                    if (countSpan && m.viewCount !== lastMessagesData[idx]?.viewCount) {
+                        countSpan.textContent = m.viewCount || 0;
+                    }
+
+                    // Обновляем время (убираем троеточие)
+                    const timeSpan = msgEl.querySelector('.msg-time');
+                    if (timeSpan && m.time && (!lastMessagesData[idx]?.time)) {
+                        timeSpan.textContent = new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     }
                 });
             }
