@@ -144,6 +144,9 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button id="channelSettingsBtn" onclick="openProfile()" class="hidden p-2 text-gray-400 hover:text-blue-600 rounded-lg transition-colors btn-animate" title="Настройки канала">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </button>
                     <button id="leaveChannelBtn" onclick="leaveCurrentChannel()" class="hidden p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors btn-animate" title="Выйти из канала">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     </button>
@@ -332,7 +335,6 @@
                 if (snap.exists()) return showToast("Ник занят");
                 let localAccounts = JSON.parse(localStorage.getItem('pnavkv2_created_accounts') || "[]");
                 if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) return showToast("Лимит: 2 аккаунта на устройство");
-                // Добавляем displayName по умолчанию равным username
                 await setDoc(uRef, { username: nameInput, displayName: nameInput, password: pass, subs: [], type: 'user', last_active: serverTimestamp(), isVerified: false });
                 if (!localAccounts.includes(nameInput)) {
                     localAccounts.push(nameInput);
@@ -365,7 +367,6 @@
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('appSidebar').style.display = 'flex';
             document.getElementById('chatView').style.display = 'flex';
-            document.getElementById('myUsername').textContent = '@' + name;
             
             updateLastActive();
             setInterval(updateLastActive, 30000);
@@ -387,7 +388,11 @@
                     const data = s.data();
                     mySubs = data.subs || [];
                     const avatar = data.avatar || '';
+                    
+                    // Обновляем отображение никнейма и аватарки в сайдбаре
+                    document.getElementById('myUsername').textContent = '@' + (data.displayName || name);
                     document.getElementById('setNewDisplayName').value = data.displayName || name;
+                    
                     const sidebarAvatar = document.getElementById('mySidebarAvatar');
                     const settingsAvatar = document.getElementById('settingsAvatarPreview');
                     if(avatar) {
@@ -445,7 +450,6 @@
                 const userData = !isChan ? allUsers.find(u => u.username === item.username) : null;
                 const isVerified = isChan ? item.isVerified : userData?.isVerified;
                 const chatId = isChan ? item.id : (item.id || [user, item.username].sort().join("_v_"));
-                // Используем displayName для отображения ника пользователя
                 const name = isChan ? item.name : (userData?.displayName || `@${item.username}`);
                 const subtext = isChan ? `@${item.link}` : formatStatus(userData?.last_active);
                 const avatar = isChan ? '' : (userData?.avatar || '');
@@ -463,7 +467,6 @@
             });
         };
 
-        // --- УПРАВЛЕНИЕ КАНАЛАМИ ---
         window.banUser = async (targetId) => {
             const chanId = activeChat.id;
             await updateDoc(doc(db, ROOT, "channels", "list", chanId), { subscribers: arrayRemove(targetId) });
@@ -496,7 +499,6 @@
             activeChat = null;
         };
 
-        // --- МЕССЕНДЖЕР ---
         window.selectChannel = (id) => {
             if(activeChat?.id === id) return;
             const c = channels.find(x => x.id === id);
@@ -540,7 +542,6 @@
                 const isMine = m.sender === user;
                 const isImageOnly = m.image && !m.text;
                 const senderData = allUsers.find(u => u.username === m.sender);
-                // Использование displayName отправителя
                 const senderName = senderData?.displayName || `@${m.sender}`;
                 const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
                 let contentHTML = '';
@@ -570,12 +571,15 @@
         window.handleAvatarUpload = (input) => {
             const file = input.files[0];
             if (!file) return;
+            if (file.size > 1.5 * 1024 * 1024) return showToast("Размер фото > 1.5MB");
             const reader = new FileReader();
             reader.onload = (e) => {
                 newAvatarBase64 = e.target.result;
                 const preview = document.getElementById('settingsAvatarPreview');
                 preview.style.backgroundImage = `url(${newAvatarBase64})`;
                 preview.textContent = '';
+                // Принудительно очищаем инпут для возможности повторного выбора на мобилках
+                input.value = '';
             };
             reader.readAsDataURL(file);
         };
@@ -631,11 +635,14 @@
             if (c) {
                 const subbed = mySubs.includes(activeChat.id);
                 const isOwner = c.owner === user;
+                // Показываем кнопку настроек канала если владелец
+                document.getElementById('channelSettingsBtn').classList.toggle('hidden', !isOwner);
                 document.getElementById('leaveChannelBtn').classList.toggle('hidden', isOwner || !subbed);
                 document.getElementById('messageControls').classList.toggle('hidden', !isOwner);
                 document.getElementById('subscriberControls').classList.toggle('hidden', isOwner);
                 if (!isOwner) { document.getElementById('joinBtn').classList.toggle('hidden', subbed); document.getElementById('joinedLabel').classList.toggle('hidden', !subbed); }
             } else {
+                document.getElementById('channelSettingsBtn').classList.add('hidden');
                 document.getElementById('messageControls').classList.remove('hidden');
                 document.getElementById('subscriberControls').classList.add('hidden');
                 document.getElementById('leaveChannelBtn').classList.add('hidden');
