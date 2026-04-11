@@ -68,6 +68,32 @@
             object-fit: contain;
         }
 
+.message-bubble.image-only {
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: hidden;
+}
+
+/* Накладываем инфо поверх картинки */
+.image-only .msg-meta-overlay {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
+    padding: 2px 8px;
+    border-radius: 10px;
+    color: white !important;
+    backdrop-filter: blur(2px);
+}
+
+/* Сама картинка без рамок */
+.image-only .msg-image {
+    margin: 0 !important;
+    max-width: 100%;
+    border-radius: 18px; /* Скругляем саму картинку */
+}
+
         .verified-badge {
             display: inline-flex;
             align-items: center;
@@ -524,32 +550,41 @@ let lastMessagesData = [];
             // Если количество сообщений изменилось (новое сообщение или первый вход) — рисуем целиком
             if (sortedMsgs.length !== lastMessagesData.length) {
                 area.innerHTML = sortedMsgs.map(m => {
-                    const isMine = m.sender === user;
-                    const senderData = allUsers.find(u => u.username === m.sender);
-                    const isVerified = senderData?.isVerified;
-                    let contentHTML = '';
-                    if (m.image) contentHTML += `<img src="${m.image}" class="msg-image" onclick="window.open('${m.image}')" onerror="this.src='https://via.placeholder.com/300?text=Ошибка+загрузки'"/>`;
-                    if (m.text) contentHTML += `<div class="break-words ${m.image ? 'mt-2' : ''}">${m.text}</div>`;
-                    
-                    const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
+    const isMine = m.sender === user;
+    const isImageOnly = m.image && !m.text; // Проверка: только ли это картинка
+    
+    const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
+    
+    // Блок с просмотрами и временем
+    const metaHTML = `
+        <div class="flex items-center gap-2 ${isImageOnly ? 'msg-meta-overlay' : 'mt-1 justify-end'}">
+            ${(activeChat.type === 'channel' && m.viewCount !== undefined) ? `
+                <div class="views-badge flex items-center gap-1 leading-none ${isImageOnly ? 'text-white' : ''}">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path>
+                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path>
+                    </svg>
+                    <span class="v-cnt text-[10px]">${m.viewCount || 0}</span>
+                </div>` : ''}
+            <div class="msg-time text-[9px] ${isImageOnly ? 'text-white' : (isMine ? 'text-blue-100' : 'text-gray-400')}">
+                ${timeStr}
+            </div>
+        </div>`;
 
-                    return `
-                    <div class="message-bubble ${isMine ? 'mine' : ''}" data-msg-id="${m.id}">
-                        ${!isMine && activeChat.type === 'channel' ? `<div class="text-[10px] font-bold text-blue-600 mb-1 flex items-center">@${m.sender} ${isVerified ? VERIFIED_HTML : ''}</div>` : ''}
-                        ${contentHTML}
-                        <div class="flex items-center justify-end gap-2 mt-1 select-none">
-                            ${activeChat.type === 'channel' ? `
-                            <div class="views-badge flex items-center gap-1">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom: 1px;">
-                                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path>
-                                    <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path>
-                                </svg>
-                                <span class="v-cnt text-[10px] font-medium">${m.viewCount || 0}</span>
-                            </div>` : ''}
-                            <div class="msg-time text-[9px] font-medium ${isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
-                        </div>
-                    </div>`;
-                }).join('');
+    let contentHTML = '';
+    if (m.image) {
+        contentHTML += `<img src="${m.image}" class="msg-image" onclick="window.open('${m.image}')"/>`;
+    }
+    if (m.text) {
+        contentHTML += `<div class="p-3 pb-1">${m.text}</div>`;
+    }
+
+    return `
+    <div class="message-bubble ${isMine ? 'mine' : ''} ${isImageOnly ? 'image-only' : ''}" data-msg-id="${m.id}">
+        ${contentHTML}
+        ${metaHTML}
+    </div>`;
+}).join('');
                 area.scrollTop = area.scrollHeight;
             } else {
                 // Если количество то же, просто точечно обновляем данные внутри пузырьков
