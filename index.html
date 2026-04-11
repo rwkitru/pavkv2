@@ -25,7 +25,7 @@
         .chat-item:hover { background: #f1f5f9; transform: translateX(4px); }
         .chat-item.active { background: #eff6ff; }
         
-        .avatar { width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
+        .avatar { width: 48px; height: 48px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; background-size: cover; background-position: center; }
         
         .unread-badge { width: 12px; height: 12px; background: #3b82f6; border-radius: 50%; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); border: 2px solid white; }
 
@@ -35,8 +35,6 @@
         .message-bubble.image-only { padding: 0 !important; background: transparent !important; box-shadow: none !important; border-radius: 18px !important; }
         .message-bubble.image-only .msg-image { margin: 0 !important; border-radius: 18px !important; display: block; }
         .message-bubble.image-only .msg-meta-overlay { position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.45); padding: 2px 8px; border-radius: 10px; color: white !important; backdrop-filter: blur(4px); display: flex; align-items: center; gap: 6px; z-index: 5; }
-        .message-bubble.image-only .msg-meta-overlay .views-badge, 
-        .message-bubble.image-only .msg-meta-overlay .msg-time { color: white !important; margin: 0; }
 
         .views-badge { display: flex; align-items: center; gap: 3px; font-size: 10px; color: #94a3b8; margin-top: 4px; }
         .mine .views-badge { color: #bfdbfe; }
@@ -61,45 +59,13 @@
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        .msg-image { 
-            max-width: 280px; 
-            max-height: 350px; 
-            width: auto;
-            height: auto;
-            border-radius: 12px; 
-            margin-top: 4px; 
-            cursor: pointer; 
-            display: block; 
-            background: #eee;
-            object-fit: contain;
-        }
+        .msg-image { max-width: 280px; max-height: 350px; width: auto; height: auto; border-radius: 12px; margin-top: 4px; cursor: pointer; display: block; background: #eee; object-fit: contain; }
 
-        .verified-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 14px;
-            height: 14px;
-            background: #3b82f6;
-            color: white;
-            border-radius: 50%;
-            margin-left: 4px;
-            vertical-align: middle;
-        }
+        .verified-badge { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; background: #3b82f6; color: white; border-radius: 50%; margin-left: 4px; vertical-align: middle; }
         .verified-badge svg { width: 10px; height: 10px; stroke-width: 4; }
 
-        .announcement-card {
-            margin: 8px 12px;
-            padding: 12px;
-            border-radius: 16px;
-            font-size: 13px;
-            line-height: 1.4;
-        }
-        .download-block {
-            background: #eff6ff;
-            border: 1px solid #dbeafe;
-            color: #1e40af;
-        }
+        .announcement-card { margin: 8px 12px; padding: 12px; border-radius: 16px; font-size: 13px; line-height: 1.4; }
+        .download-block { background: #eff6ff; border: 1px solid #dbeafe; color: #1e40af; }
     </style>
 </head>
 <body class="flex">
@@ -145,8 +111,13 @@
 
         <div id="chatListArea" class="flex-1 overflow-y-auto space-y-1"></div>
         <div class="p-4 border-t bg-gray-50 flex items-center justify-between">
-            <span id="myUsername" class="font-bold text-sm text-gray-500 truncate max-w-[150px]">@user</span>
-            <button onclick="openSettings()" class="text-xs text-blue-600 font-bold hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">Настройки</button>
+            <div class="flex items-center gap-2 overflow-hidden">
+                <div id="mySidebarAvatar" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 bg-cover bg-center">?</div>
+                <span id="myUsername" class="font-bold text-sm text-gray-500 truncate max-w-[150px]">@user</span>
+            </div>
+            <button onclick="openSettings()" class="p-2 text-gray-400 hover:text-blue-600 transition-colors btn-animate">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
         </div>
     </aside>
 
@@ -165,7 +136,7 @@
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-width="2.5"></path></svg>
                     </button>
                     <div class="flex items-center gap-2 cursor-pointer overflow-hidden transition-opacity hover:opacity-80" onclick="openProfile()">
-                        <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 transition-transform">?</div>
+                        <div id="headerAvatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 transition-transform bg-cover bg-center">?</div>
                         <div class="min-w-0">
                             <h3 id="headerTitle" class="font-bold text-gray-800 leading-tight truncate text-sm md:text-base flex items-center">Имя</h3>
                             <p id="headerMeta" class="text-[10px] md:text-xs text-blue-500 truncate">инфо</p>
@@ -201,18 +172,28 @@
     </main>
 
     <div id="settingsModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) this.style.display='none'">
-        <div class="bg-white p-6 rounded-3xl w-full max-w-[400px] shadow-2xl">
+        <div class="bg-white p-6 rounded-3xl w-full max-w-[400px] shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-4">Настройки</h2>
             <div class="space-y-4">
-                <div class="p-4 bg-gray-50 rounded-2xl">
-                    <p class="text-xs text-gray-400 uppercase font-bold mb-1 tracking-wider">Ваш профиль</p>
-                    <p id="settingsUsername" class="font-bold text-gray-800">@user</p>
+                <div class="flex flex-col items-center mb-6">
+                    <div id="settingsAvatarPreview" class="w-20 h-20 rounded-full bg-blue-600 text-white flex items-center justify-center text-2xl font-bold mb-3 bg-cover bg-center">?</div>
+                    <input type="file" id="avatarInput" accept="image/*" class="hidden" onchange="handleAvatarUpload(this)">
+                    <button onclick="document.getElementById('avatarInput').click()" class="text-xs text-blue-600 font-bold hover:underline">Сменить фото профиля</button>
                 </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase ml-2">Никнейм</label>
+                    <input type="text" id="setNewUsername" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-sm" placeholder="Новый никнейм">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase ml-2">Новый пароль</label>
+                    <input type="password" id="setNewPassword" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-sm" placeholder="Оставьте пустым, если не меняете">
+                </div>
+                <button onclick="saveProfileChanges()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl btn-animate shadow-md">Сохранить изменения</button>
+                <div class="h-px bg-gray-100 my-4"></div>
                 <button onclick="logout()" class="w-full py-4 bg-red-50 text-red-500 font-bold rounded-xl hover:bg-red-100 transition-all btn-animate flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     Выйти из аккаунта
                 </button>
-                <button onclick="document.getElementById('settingsModal').style.display='none'" class="w-full py-4 bg-gray-100 text-gray-600 font-bold rounded-xl btn-animate">Закрыть</button>
             </div>
         </div>
     </div>
@@ -235,7 +216,7 @@
     <div id="profileModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) this.style.display='none'">
         <div class="bg-white p-6 rounded-3xl w-full max-w-[450px] shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
             <div id="profileScrollArea" class="overflow-y-auto flex-1 pr-1">
-                <div id="profAvatar" class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl text-white font-bold">?</div>
+                <div id="profAvatar" class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl text-white font-bold bg-cover bg-center">?</div>
                 <h2 id="profName" class="text-xl font-bold text-center flex items-center justify-center">Имя</h2>
                 <p id="profId" class="text-blue-500 mb-6 text-center">@id</p>
                 
@@ -265,7 +246,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBAFGyrgliehm-cfJG91QkQRvUGACPP8rA",
@@ -296,6 +277,7 @@
         let lastMessageTimestamps = {};
         let unreadStates = {}; 
         let lastRenderedChatIds = "";
+        let newAvatarBase64 = null;
 
         const initAuth = async () => {
           const currentVersion = localStorage.getItem('pnavkv2_app_version');
@@ -305,7 +287,6 @@
               location.reload();
               return;
           }
-
           if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
             await signInWithCustomToken(auth, __initial_auth_token);
           } else {
@@ -384,9 +365,10 @@
             document.getElementById('appSidebar').style.display = 'flex';
             document.getElementById('chatView').style.display = 'flex';
             document.getElementById('myUsername').textContent = '@' + name;
-            document.getElementById('settingsUsername').textContent = '@' + name;
+            document.getElementById('setNewUsername').value = name;
             updateLastActive();
             setInterval(updateLastActive, 30000);
+            
             onSnapshot(collection(db, ROOT, "direct_chats", "list"), (s) => {
                 directChatsWithActivity = s.docs
                     .filter(d => d.id.includes(user))
@@ -402,7 +384,17 @@
             onSnapshot(doc(db, ROOT, "users", "list", name), (s) => {
                 if(s.exists()) { 
                     const data = s.data();
-                    mySubs = data.subs || []; 
+                    mySubs = data.subs || [];
+                    const avatar = data.avatar || '';
+                    const sidebarAvatar = document.getElementById('mySidebarAvatar');
+                    const settingsAvatar = document.getElementById('settingsAvatarPreview');
+                    if(avatar) {
+                        sidebarAvatar.style.backgroundImage = `url(${avatar})`; sidebarAvatar.textContent = '';
+                        settingsAvatar.style.backgroundImage = `url(${avatar})`; settingsAvatar.textContent = '';
+                    } else {
+                        sidebarAvatar.style.backgroundImage = ''; sidebarAvatar.textContent = name[0].toUpperCase();
+                        settingsAvatar.style.backgroundImage = ''; settingsAvatar.textContent = name[0].toUpperCase();
+                    }
                     renderChatList(); 
                 }
             });
@@ -443,21 +435,7 @@
                     return (lastMessageTimestamps[idB] || 0) - (lastMessageTimestamps[idA] || 0);
                 });
             const currentIds = unique.map(i => (i.id || i.username) + unreadStates[i.id || (i.id || [user, i.username].sort().join("_v_"))]).join('|');
-            if(currentIds === lastRenderedChatIds && search.length === 0) {
-                unique.forEach((item, idx) => {
-                    const el = list.children[idx];
-                    if(!el) return;
-                    const isChan = item.type === 'channel';
-                    const userData = !isChan ? allUsers.find(u => u.username === item.username) : null;
-                    const subtext = isChan ? `@${item.link}` : formatStatus(userData?.last_active);
-                    const subEl = el.querySelector('p');
-                    if(subEl) {
-                        subEl.textContent = subtext;
-                        subEl.className = `text-[11px] ${subtext === 'В сети' ? 'text-blue-500 font-medium' : 'text-gray-400'} truncate`;
-                    }
-                });
-                return;
-            }
+            if(currentIds === lastRenderedChatIds && search.length === 0) return;
             lastRenderedChatIds = currentIds;
             list.innerHTML = '';
             unique.forEach(item => {
@@ -467,11 +445,12 @@
                 const chatId = isChan ? item.id : (item.id || [user, item.username].sort().join("_v_"));
                 const name = isChan ? item.name : `@${item.username}`;
                 const subtext = isChan ? `@${item.link}` : formatStatus(userData?.last_active);
+                const avatar = isChan ? '' : (userData?.avatar || '');
                 const div = document.createElement('div');
                 div.className = `chat-item ${activeChat?.id === chatId ? 'active' : ''}`;
                 div.onclick = () => isChan ? selectChannel(item.id) : selectUser(item.username);
                 div.innerHTML = `
-                    <div class="avatar shadow-sm" style="background:${getHashColor(name)}">${(isChan ? item.name : item.username)[0].toUpperCase()}</div>
+                    <div class="avatar shadow-sm" style="background:${avatar ? `url(${avatar})` : getHashColor(name)}; background-size: cover; background-position: center;">${avatar ? '' : (isChan ? item.name : item.username)[0].toUpperCase()}</div>
                     <div class="flex-1 overflow-hidden">
                         <div class="font-bold truncate text-gray-800 flex items-center">${name} ${isVerified ? VERIFIED_HTML : ''}</div>
                         <p class="text-[11px] ${subtext === 'В сети' ? 'text-blue-500 font-medium' : 'text-gray-400'} truncate">${subtext}</p>
@@ -511,20 +490,6 @@
             window.msgUnsub = onSnapshot(colRef, (s) => {
                 const msgs = s.docs.map(d => ({id: d.id, ...d.data()}));
                 renderMessages(msgs);
-                if (activeChat.type === 'channel') {
-                    const cooldowns = JSON.parse(localStorage.getItem('pnavkv2_view_cooldowns') || "{}");
-                    const now = Date.now();
-                    msgs.forEach(m => {
-                        const lastView = cooldowns[m.id];
-                        if (!lastView || (now - lastView > 300000)) {
-                            updateDoc(doc(db, ROOT, "channels", "list", activeChat.id, "messages", m.id), { 
-                                viewCount: increment(1) 
-                            });
-                            cooldowns[m.id] = now;
-                        }
-                    });
-                    localStorage.setItem('pnavkv2_view_cooldowns', JSON.stringify(cooldowns));
-                }
             });
             if (window.innerWidth <= 768) document.getElementById('appSidebar').classList.add('hidden-mobile');
             renderChatList();
@@ -533,67 +498,26 @@
         let lastMessagesData = []; 
         function renderMessages(msgs) {
             const area = document.getElementById('messagesArea');
-            if (msgs.length === 0) {
-                area.innerHTML = '';
-                lastMessagesData = [];
-                return;
-            }
-
-            const sortedMsgs = [...msgs].sort((a, b) => {
-                const timeA = a.time?.toMillis() || Date.now() + 10000;
-                const timeB = b.time?.toMillis() || Date.now() + 10000;
-                return timeA - timeB;
-            });
-
-            if (sortedMsgs.length !== lastMessagesData.length) {
-                area.innerHTML = sortedMsgs.map(m => {
-                    const isMine = m.sender === user;
-                    const isImageOnly = m.image && !m.text;
-                    const senderData = allUsers.find(u => u.username === m.sender);
-                    const isVerified = senderData?.isVerified;
-                    
-                    const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
-
-                    let contentHTML = '';
-                    if (m.image) contentHTML += `<img src="${m.image}" class="msg-image" onclick="window.open('${m.image}')" onerror="this.src='https://via.placeholder.com/300?text=Ошибка+загрузки'"/>`;
-                    if (m.text) contentHTML += `<div class="break-words ${m.image ? 'mt-2' : ''}">${m.text}</div>`;
-
-                    const metaHTML = `
-                        <div class="${isImageOnly ? 'msg-meta-overlay' : 'flex items-center justify-end gap-2 mt-1'}">
-                            ${(activeChat.type === 'channel' && m.viewCount !== undefined) ? `
-                            <div class="views-badge flex items-center gap-1 leading-none">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom: 1px;">
-                                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path>
-                                    <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path>
-                                </svg>
-                                <span class="v-cnt text-[10px] font-medium">${m.viewCount || 0}</span>
-                            </div>` : ''}
-                            <div class="msg-time text-[9px] font-medium ${!isImageOnly && isMine ? 'text-blue-100' : (!isImageOnly ? 'text-gray-400' : '')}">${timeStr}</div>
-                        </div>`;
-
-                    return `
-                    <div class="message-bubble ${isMine ? 'mine' : ''} ${isImageOnly ? 'image-only' : ''}" data-msg-id="${m.id}">
-                        ${!isMine && activeChat.type === 'channel' && !isImageOnly ? `<div class="text-[10px] font-bold text-blue-600 mb-1 flex items-center">@${m.sender} ${isVerified ? VERIFIED_HTML : ''}</div>` : ''}
-                        ${contentHTML}
-                        ${metaHTML}
-                    </div>`;
-                }).join('');
-                area.scrollTop = area.scrollHeight;
-            } else {
-                sortedMsgs.forEach((m, idx) => {
-                    const msgEl = area.querySelector(`[data-msg-id="${m.id}"]`);
-                    if (!msgEl) return;
-                    const countSpan = msgEl.querySelector('.v-cnt');
-                    if (countSpan && m.viewCount !== lastMessagesData[idx]?.viewCount) {
-                        countSpan.textContent = m.viewCount || 0;
-                    }
-                    const timeSpan = msgEl.querySelector('.msg-time');
-                    if (timeSpan && m.time && (!lastMessagesData[idx]?.time)) {
-                        timeSpan.textContent = new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    }
-                });
-            }
-            lastMessagesData = JSON.parse(JSON.stringify(sortedMsgs));
+            const sortedMsgs = [...msgs].sort((a, b) => (a.time?.toMillis() || Date.now() + 10000) - (b.time?.toMillis() || Date.now() + 10000));
+            area.innerHTML = sortedMsgs.map(m => {
+                const isMine = m.sender === user;
+                const isImageOnly = m.image && !m.text;
+                const senderData = allUsers.find(u => u.username === m.sender);
+                const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
+                let contentHTML = '';
+                if (m.image) contentHTML += `<img src="${m.image}" class="msg-image" onclick="window.open('${m.image}')"/>`;
+                if (m.text) contentHTML += `<div class="break-words ${m.image ? 'mt-2' : ''}">${m.text}</div>`;
+                return `
+                <div class="message-bubble ${isMine ? 'mine' : ''} ${isImageOnly ? 'image-only' : ''}" data-msg-id="${m.id}">
+                    ${!isMine && activeChat.type === 'channel' && !isImageOnly ? `<div class="text-[10px] font-bold text-blue-600 mb-1 flex items-center">@${m.sender} ${senderData?.isVerified ? VERIFIED_HTML : ''}</div>` : ''}
+                    ${contentHTML}
+                    <div class="${isImageOnly ? 'msg-meta-overlay' : 'flex items-center justify-end gap-2 mt-1'}">
+                        ${(activeChat.type === 'channel' && m.viewCount !== undefined) ? `<div class="views-badge"><span class="v-cnt text-[10px] font-medium">${m.viewCount || 0}</span></div>` : ''}
+                        <div class="msg-time text-[9px] font-medium ${!isImageOnly && isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
+                    </div>
+                </div>`;
+            }).join('');
+            area.scrollTop = area.scrollHeight;
         }
 
         window.handleImageUpload = (input) => {
@@ -602,6 +526,44 @@
             const reader = new FileReader();
             reader.onload = (e) => { sendMessage(e.target.result); input.value = ''; };
             reader.readAsDataURL(file);
+        };
+
+        window.handleAvatarUpload = (input) => {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                newAvatarBase64 = e.target.result;
+                const preview = document.getElementById('settingsAvatarPreview');
+                preview.style.backgroundImage = `url(${newAvatarBase64})`;
+                preview.textContent = '';
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.saveProfileChanges = async () => {
+            const newName = document.getElementById('setNewUsername').value.trim().toLowerCase().replace('@', '');
+            const newPass = document.getElementById('setNewPassword').value;
+            if (!ID_REGEX.test(newName)) return showToast("Некорректный никнейм");
+            
+            const updates = {};
+            if (newAvatarBase64) updates.avatar = newAvatarBase64;
+            if (newPass.length >= 4) updates.password = newPass;
+
+            if (newName !== user) {
+                const check = await getDoc(doc(db, ROOT, "users", "list", newName));
+                if (check.exists()) return showToast("Ник уже занят");
+                const oldData = (await getDoc(doc(db, ROOT, "users", "list", user))).data();
+                await setDoc(doc(db, ROOT, "users", "list", newName), { ...oldData, ...updates, username: newName });
+                await deleteDoc(doc(db, ROOT, "users", "list", user));
+                user = newName;
+                localStorage.setItem('pnavkv2_user', newName);
+                document.getElementById('myUsername').textContent = '@' + newName;
+            } else if (Object.keys(updates).length > 0) {
+                await updateDoc(doc(db, ROOT, "users", "list", user), updates);
+            }
+            showToast("Профиль обновлен");
+            document.getElementById('settingsModal').style.display = 'none';
         };
 
         window.sendMessage = async (imgData = null) => {
@@ -616,12 +578,7 @@
             if (text) msgData.text = text;
             if (imgData) msgData.image = imgData;
             try {
-                const ref = await addDoc(collection(db, ROOT, colPath, "list", currentChat.id, "messages"), msgData);
-                if (isChan) {
-                    const cooldowns = JSON.parse(localStorage.getItem('pnavkv2_view_cooldowns') || "{}");
-                    cooldowns[ref.id] = Date.now();
-                    localStorage.setItem('pnavkv2_view_cooldowns', JSON.stringify(cooldowns));
-                }
+                await addDoc(collection(db, ROOT, colPath, "list", currentChat.id, "messages"), msgData);
                 await setDoc(doc(db, ROOT, colPath, "list", currentChat.id), { last_msg_time: serverTimestamp(), last_msg_by: user, viewedBy: [user] }, { merge: true });
             } catch (e) { showToast("Ошибка отправки"); }
         };
@@ -633,26 +590,19 @@
             const c = activeChat.type === 'channel' ? activeChat.data : null;
             const userData = !c ? allUsers.find(u => u.username === activeChat.targetUser) : null;
             const isVerified = c ? c.isVerified : userData?.isVerified;
-            const titleHTML = (c ? c.name : `@${activeChat.targetUser}`) + (isVerified ? VERIFIED_HTML : '');
-            if(document.getElementById('headerTitle').innerHTML !== titleHTML) document.getElementById('headerTitle').innerHTML = titleHTML;
-            const metaText = c ? `@${c.link} • ${c.subscribers?.length || 0} подп.` : formatStatus(userData?.last_active);
-            document.getElementById('headerMeta').textContent = metaText;
-            const avatarChar = (c ? c.name : activeChat.targetUser)[0].toUpperCase();
+            document.getElementById('headerTitle').innerHTML = (c ? c.name : `@${activeChat.targetUser}`) + (isVerified ? VERIFIED_HTML : '');
+            document.getElementById('headerMeta').textContent = c ? `@${c.link} • ${c.subscribers?.length || 0} подп.` : formatStatus(userData?.last_active);
             const headerAvatar = document.getElementById('headerAvatar');
-            if(headerAvatar.textContent !== avatarChar) {
-                headerAvatar.textContent = avatarChar;
-                headerAvatar.style.background = getHashColor(c ? c.name : activeChat.targetUser);
-            }
+            const avatarImg = c ? '' : (userData?.avatar || '');
+            if(avatarImg) { headerAvatar.style.backgroundImage = `url(${avatarImg})`; headerAvatar.textContent = ''; }
+            else { headerAvatar.style.backgroundImage = ''; headerAvatar.textContent = (c ? c.name : activeChat.targetUser)[0].toUpperCase(); headerAvatar.style.backgroundColor = getHashColor(c ? c.name : activeChat.targetUser); }
             if (c) {
                 const subbed = mySubs.includes(activeChat.id);
                 const isOwner = c.owner === user;
                 document.getElementById('leaveChannelBtn').classList.toggle('hidden', isOwner || !subbed);
                 document.getElementById('messageControls').classList.toggle('hidden', !isOwner);
                 document.getElementById('subscriberControls').classList.toggle('hidden', isOwner);
-                if (!isOwner) {
-                    document.getElementById('joinBtn').classList.toggle('hidden', subbed);
-                    document.getElementById('joinedLabel').classList.toggle('hidden', !subbed);
-                }
+                if (!isOwner) { document.getElementById('joinBtn').classList.toggle('hidden', subbed); document.getElementById('joinedLabel').classList.toggle('hidden', !subbed); }
             } else {
                 document.getElementById('messageControls').classList.remove('hidden');
                 document.getElementById('subscriberControls').classList.add('hidden');
@@ -671,8 +621,10 @@
             const isOwner = isChan && c.owner === user;
             document.getElementById('profName').innerHTML = (isChan ? c.name : `@${activeChat.targetUser}`) + (isVerified ? VERIFIED_HTML : '');
             document.getElementById('profId').textContent = isChan ? `@${c.link}` : 'Пользователь';
-            document.getElementById('profAvatar').textContent = (isChan ? c.name : activeChat.targetUser)[0].toUpperCase();
-            document.getElementById('profAvatar').style.background = getHashColor(isChan ? c.name : activeChat.targetUser);
+            const profAvatar = document.getElementById('profAvatar');
+            const avatarImg = isChan ? '' : (userData?.avatar || '');
+            if(avatarImg) { profAvatar.style.backgroundImage = `url(${avatarImg})`; profAvatar.textContent = ''; }
+            else { profAvatar.style.backgroundImage = ''; profAvatar.textContent = (isChan ? c.name : activeChat.targetUser)[0].toUpperCase(); profAvatar.style.backgroundColor = getHashColor(isChan ? c.name : activeChat.targetUser); }
             document.getElementById('ownerEditSection').classList.toggle('hidden', !isOwner);
             document.getElementById('subscribersSection').classList.toggle('hidden', !isOwner);
             if (isOwner) {
@@ -683,9 +635,10 @@
                 list.innerHTML = '';
                 (c.subscribers || []).forEach(subId => {
                     const subData = allUsers.find(u => u.username === subId);
+                    const subAvatar = subData?.avatar || '';
                     const div = document.createElement('div');
                     div.className = "flex items-center justify-between p-2 bg-gray-50 rounded-xl";
-                    div.innerHTML = `<div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:${getHashColor(subId)}">${subId[0].toUpperCase()}</div><span class="text-sm font-medium flex items-center">@${subId} ${subData?.isVerified ? VERIFIED_HTML : ''}</span></div>
+                    div.innerHTML = `<div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-cover bg-center" style="background:${subAvatar ? `url(${subAvatar})` : getHashColor(subId)}">${subAvatar ? '' : subId[0].toUpperCase()}</div><span class="text-sm font-medium flex items-center">@${subId} ${subData?.isVerified ? VERIFIED_HTML : ''}</span></div>
                         ${subId !== user ? `<button onclick="banUser('${subId}')" class="text-[10px] text-red-500 font-bold hover:bg-red-100 px-2 py-1 rounded-lg transition-colors">БАН</button>` : ''}`;
                     list.appendChild(div);
                 });
@@ -694,38 +647,6 @@
             if (isChan) meta.innerHTML = `<p class="text-sm">Владелец: <b>@${c.owner}</b></p><p class="text-sm">Создан: ${c.last_msg_time ? new Date(c.last_msg_time.seconds * 1000).toLocaleDateString() : 'недавно'}</p>`;
             else meta.innerHTML = `<p class="text-sm">${formatStatus(userData?.last_active)}</p><p class="text-xs text-gray-400 mt-2">Личный чат</p>`;
         }
-
-        window.banUser = async (targetId) => {
-            const chanId = activeChat.id;
-            await updateDoc(doc(db, ROOT, "channels", "list", chanId), { subscribers: arrayRemove(targetId) });
-            await updateDoc(doc(db, ROOT, "users", "list", targetId), { subs: arrayRemove(chanId) });
-            showToast(`@${targetId} исключен`);
-            renderProfileContent();
-        };
-
-        window.updateChannelData = async () => {
-            const name = document.getElementById('editNameInput').value.trim();
-            const link = document.getElementById('editIdInput').value.trim().toLowerCase().replace('@', '');
-            if (!name || !ID_REGEX.test(link)) return showToast("Некорректные данные");
-            const querySnap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
-            if (querySnap.docs.find(d => d.id !== activeChat.id)) return showToast("Этот ID уже занят");
-            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { name, link });
-            showToast("Данные обновлены");
-        };
-
-        window.toggleJoin = async () => {
-            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(activeChat.id) });
-            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayUnion(user) });
-            showToast("Вы подписались!");
-        };
-
-        window.leaveCurrentChannel = async () => {
-            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayRemove(activeChat.id) });
-            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayRemove(user) });
-            document.getElementById('noChannelView').classList.remove('hidden');
-            document.getElementById('activeChannelContent').classList.add('hidden');
-            activeChat = null;
-        };
 
         window.openSettings = () => { document.getElementById('settingsModal').style.display = 'flex'; };
         window.openCreateModal = () => document.getElementById('createChannelModal').style.display = 'flex';
@@ -740,19 +661,10 @@
             document.getElementById('createChannelModal').style.display = 'none';
             selectChannel(ref.id);
         };
-
         window.goBack = () => document.getElementById('appSidebar').classList.remove('hidden-mobile');
         window.logout = () => { localStorage.removeItem('pnavkv2_user'); location.reload(); };
-        function showToast(t) { 
-            const el = document.getElementById('toast'); 
-            el.textContent = t; el.style.opacity = '1'; el.style.pointerEvents = 'auto';
-            setTimeout(() => { el.style.opacity = '0'; el.style.pointerEvents = 'none'; }, 3000); 
-        }
-        function getHashColor(s) { 
-            const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; 
-            let h = 0; for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); 
-            return c[Math.abs(h) % c.length]; 
-        }
+        function showToast(t) { const el = document.getElementById('toast'); el.textContent = t; el.style.opacity = '1'; el.style.pointerEvents = 'auto'; setTimeout(() => { el.style.opacity = '0'; el.style.pointerEvents = 'none'; }, 3000); }
+        function getHashColor(s) { const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; let h = 0; for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return c[Math.abs(h) % c.length]; }
         document.getElementById('msgInput').addEventListener('keypress', e => e.key === 'Enter' && sendMessage());
     </script>
 </body>
