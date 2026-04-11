@@ -247,14 +247,9 @@
     <div id="toast" class="custom-alert"></div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // Важно: в импорте ниже была ошибка в ссылке, исправляю на firestore
-        import { } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Повторный импорт из правильного модуля для надежности
-        const { getFirestore: getFS, doc: dFS, setDoc: sFS, getDoc: gFS, collection: cFS, onSnapshot: oS, addDoc: aD, updateDoc: uD, serverTimestamp: sT, arrayUnion: aU, arrayRemove: aR, query: qRY, where: wH, getDocs: gDS, increment: iCR, deleteDoc: dD } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBAFGyrgliehm-cfJG91QkQRvUGACPP8rA",
@@ -267,7 +262,7 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFS(app);
+        const db = getFirestore(app);
         
         const ROOT = "pnavkv2_v8"; 
         const APP_VERSION = "8.0";
@@ -295,11 +290,7 @@
               location.reload();
               return;
           }
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(auth, __initial_auth_token);
-          } else {
-            await signInAnonymously(auth);
-          }
+          await signInAnonymously(auth);
         };
         initAuth();
 
@@ -334,13 +325,13 @@
             const pass = document.getElementById('authPassword').value;
             if (!ID_REGEX.test(nameInput)) return showToast("Некорректный никнейм (4-12 симв., латиница)");
             if (pass.length < 4) return showToast("Короткий пароль");
-            const uRef = dFS(db, ROOT, "users", "list", nameInput);
-            const snap = await gFS(uRef);
+            const uRef = doc(db, ROOT, "users", "list", nameInput);
+            const snap = await getDoc(uRef);
             if (authMode === 'register') {
                 if (snap.exists()) return showToast("Ник занят");
                 let localAccounts = JSON.parse(localStorage.getItem('pnavkv2_created_accounts') || "[]");
                 if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) return showToast("Лимит: 2 аккаунта на устройство");
-                await sFS(uRef, { username: nameInput, displayName: nameInput, password: pass, subs: [], type: 'user', last_active: sT(), isVerified: false });
+                await setDoc(uRef, { username: nameInput, displayName: nameInput, password: pass, subs: [], type: 'user', last_active: serverTimestamp(), isVerified: false });
                 if (!localAccounts.includes(nameInput)) {
                     localAccounts.push(nameInput);
                     localStorage.setItem('pnavkv2_created_accounts', JSON.stringify(localAccounts));
@@ -354,7 +345,7 @@
 
         function updateLastActive() {
             if (!user) return;
-            uD(dFS(db, ROOT, "users", "list", user), { last_active: sT() });
+            updateDoc(doc(db, ROOT, "users", "list", user), { last_active: serverTimestamp() });
         }
 
         function formatStatus(lastActive) {
@@ -376,7 +367,7 @@
             updateLastActive();
             setInterval(updateLastActive, 30000);
             
-            oS(cFS(db, ROOT, "direct_chats", "list"), (s) => {
+            onSnapshot(collection(db, ROOT, "direct_chats", "list"), (s) => {
                 directChatsWithActivity = s.docs
                     .filter(d => d.id.includes(user))
                     .map(d => {
@@ -388,7 +379,7 @@
                     });
                 renderChatList();
             });
-            oS(dFS(db, ROOT, "users", "list", name), (s) => {
+            onSnapshot(doc(db, ROOT, "users", "list", name), (s) => {
                 if(s.exists()) { 
                     const data = s.data();
                     mySubs = data.subs || [];
@@ -407,7 +398,7 @@
                     renderChatList(); 
                 }
             });
-            oS(cFS(db, ROOT, "channels", "list"), (s) => {
+            onSnapshot(collection(db, ROOT, "channels", "list"), (s) => {
                 channels = s.docs.map(d => {
                     const data = d.data();
                     lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
@@ -422,7 +413,7 @@
                 });
                 renderChatList();
             });
-            oS(cFS(db, ROOT, "users", "list"), (s) => {
+            onSnapshot(collection(db, ROOT, "users", "list"), (s) => {
                 allUsers = s.docs.map(d => ({ id: d.id, ...d.data(), type: 'user' }));
                 renderChatList();
                 if(activeChat) updateUI();
@@ -471,8 +462,8 @@
 
         window.banUser = async (targetId) => {
             const chanId = activeChat.id;
-            await uD(dFS(db, ROOT, "channels", "list", chanId), { subscribers: aR(targetId) });
-            await uD(dFS(db, ROOT, "users", "list", targetId), { subs: aR(chanId) });
+            await updateDoc(doc(db, ROOT, "channels", "list", chanId), { subscribers: arrayRemove(targetId) });
+            await updateDoc(doc(db, ROOT, "users", "list", targetId), { subs: arrayRemove(chanId) });
             showToast(`@${targetId} исключен`);
             renderProfileContent();
         };
@@ -481,21 +472,21 @@
             const name = document.getElementById('editNameInput').value.trim();
             const link = document.getElementById('editIdInput').value.trim().toLowerCase().replace('@', '');
             if (!name || !ID_REGEX.test(link)) return showToast("Некорректные данные");
-            const querySnap = await gDS(qRY(cFS(db, ROOT, "channels", "list"), wH("link", "==", link)));
+            const querySnap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
             if (querySnap.docs.find(d => d.id !== activeChat.id)) return showToast("Этот ID уже занят");
-            await uD(dFS(db, ROOT, "channels", "list", activeChat.id), { name, link });
+            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { name, link });
             showToast("Данные обновлены");
         };
 
         window.toggleJoin = async () => {
-            await uD(dFS(db, ROOT, "users", "list", user), { subs: aU(activeChat.id) });
-            await uD(dFS(db, ROOT, "channels", "list", activeChat.id), { subscribers: aU(user) });
+            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(activeChat.id) });
+            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayUnion(user) });
             showToast("Вы подписались!");
         };
 
         window.leaveCurrentChannel = async () => {
-            await uD(dFS(db, ROOT, "users", "list", user), { subs: aR(activeChat.id) });
-            await uD(dFS(db, ROOT, "channels", "list", activeChat.id), { subscribers: aR(user) });
+            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayRemove(activeChat.id) });
+            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayRemove(user) });
             document.getElementById('noChannelView').classList.remove('hidden');
             document.getElementById('activeChannelContent').classList.add('hidden');
             activeChat = null;
@@ -508,8 +499,8 @@
             lastMessagesData = []; 
             document.getElementById('messagesArea').innerHTML = '';
             updateUI();
-            uD(dFS(db, ROOT, "channels", "list", id), { viewedBy: aU(user) });
-            subscribeToMessages(cFS(db, ROOT, "channels", "list", id, "messages"));
+            updateDoc(doc(db, ROOT, "channels", "list", id), { viewedBy: arrayUnion(user) });
+            subscribeToMessages(collection(db, ROOT, "channels", "list", id, "messages"));
         };
 
         window.selectUser = async (targetUser) => {
@@ -519,16 +510,16 @@
             lastMessagesData = [];
             document.getElementById('messagesArea').innerHTML = '';
             updateUI();
-            const chatRef = dFS(db, ROOT, "direct_chats", "list", chatId);
-            const chatSnap = await gFS(chatRef);
-            if (!chatSnap.exists()) await sFS(chatRef, { members: [user, targetUser], last_msg_time: sT() });
-            uD(chatRef, { viewedBy: aU(user) });
-            subscribeToMessages(cFS(db, ROOT, "direct_chats", "list", chatId, "messages"));
+            const chatRef = doc(db, ROOT, "direct_chats", "list", chatId);
+            const chatSnap = await getDoc(chatRef);
+            if (!chatSnap.exists()) await setDoc(chatRef, { members: [user, targetUser], last_msg_time: serverTimestamp() });
+            updateDoc(chatRef, { viewedBy: arrayUnion(user) });
+            subscribeToMessages(collection(db, ROOT, "direct_chats", "list", chatId, "messages"));
         };
 
         function subscribeToMessages(colRef) {
             if (window.msgUnsub) window.msgUnsub();
-            window.msgUnsub = oS(colRef, (s) => {
+            window.msgUnsub = onSnapshot(colRef, (s) => {
                 const msgs = s.docs.map(d => ({id: d.id, ...d.data()}));
                 renderMessages(msgs);
             });
@@ -548,9 +539,9 @@
                 const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
                 
                 if (activeChat.type === 'channel' && !isMine && (!m.viewedBy || !m.viewedBy.includes(user))) {
-                    uD(dFS(db, ROOT, "channels", "list", activeChat.id, "messages", m.id), {
-                        viewCount: iCR(1),
-                        viewedBy: aU(user)
+                    updateDoc(doc(db, ROOT, "channels", "list", activeChat.id, "messages", m.id), {
+                        viewCount: increment(1),
+                        viewedBy: arrayUnion(user)
                     });
                 }
 
@@ -585,33 +576,23 @@
             reader.readAsDataURL(file);
         };
 
-        // --- ИСПРАВЛЕННЫЙ БЛОК ДЛЯ АВАТАРКИ ---
         window.handleAvatarUpload = (input) => {
             const file = input.files[0];
             if (!file) return;
-            
-            newAvatarBase64 = null; // Сброс
-            
+            newAvatarBase64 = null;
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_SIZE = 400; // Оптимально для аватарок
+                    const MAX_SIZE = 400;
                     let width = img.width;
                     let height = img.height;
-                    
-                    if (width > height) {
-                        if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
-                    } else {
-                        if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
-                    }
-                    
-                    canvas.width = width;
-                    canvas.height = height;
+                    if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } } 
+                    else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+                    canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    
                     newAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
                     const preview = document.getElementById('settingsAvatarPreview');
                     preview.style.backgroundImage = `url(${newAvatarBase64})`;
@@ -621,32 +602,24 @@
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
-            input.value = ''; // Очистка для возможности повторного выбора
+            input.value = '';
         };
 
         window.saveProfileChanges = async () => {
             const newDisplayName = document.getElementById('setNewDisplayName').value.trim();
             const newPass = document.getElementById('setNewPassword').value;
             if (!newDisplayName) return showToast("Имя не может быть пустым");
-            
             const updates = { displayName: newDisplayName };
             if (newAvatarBase64) updates.avatar = newAvatarBase64;
             if (newPass && newPass.length >= 4) updates.password = newPass;
-
             try {
-                const userRef = dFS(db, ROOT, "users", "list", user);
-                await uD(userRef, updates);
+                const userRef = doc(db, ROOT, "users", "list", user);
+                await updateDoc(userRef, updates);
                 newAvatarBase64 = null;
                 showToast("✅ Сохранено успешно");
-                setTimeout(() => {
-                    document.getElementById('settingsModal').style.display = 'none';
-                }, 400);
-            } catch (err) {
-                console.error(err);
-                showToast("❌ Ошибка записи в базу");
-            }
+                setTimeout(() => { document.getElementById('settingsModal').style.display = 'none'; }, 400);
+            } catch (err) { console.error(err); showToast("❌ Ошибка записи"); }
         };
-        // ---------------------------------------
 
         window.sendMessage = async (imgData = null) => {
             const input = document.getElementById('msgInput');
@@ -656,12 +629,12 @@
             input.value = '';
             const isChan = currentChat.type === 'channel';
             const colPath = isChan ? "channels" : "direct_chats";
-            const msgData = { sender: user, time: sT(), viewCount: isChan ? 1 : 0, viewedBy: [user] };
+            const msgData = { sender: user, time: serverTimestamp(), viewCount: isChan ? 1 : 0, viewedBy: [user] };
             if (text) msgData.text = text;
             if (imgData) msgData.image = imgData;
             try {
-                await aD(cFS(db, ROOT, colPath, "list", currentChat.id, "messages"), msgData);
-                await sFS(dFS(db, ROOT, colPath, "list", currentChat.id), { last_msg_time: sT(), last_msg_by: user, viewedBy: [user] }, { merge: true });
+                await addDoc(collection(db, ROOT, colPath, "list", currentChat.id, "messages"), msgData);
+                await setDoc(doc(db, ROOT, colPath, "list", currentChat.id), { last_msg_time: serverTimestamp(), last_msg_by: user, viewedBy: [user] }, { merge: true });
             } catch (e) { showToast("Ошибка отправки"); }
         };
 
@@ -741,10 +714,10 @@
             const name = document.getElementById('createNameInput').value.trim();
             const link = document.getElementById('createIdInput').value.trim().toLowerCase().replace('@', '');
             if (!name || !ID_REGEX.test(link)) return showToast("Некорректные данные");
-            const snap = await gDS(qRY(cFS(db, ROOT, "channels", "list"), wH("link", "==", link)));
+            const snap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
             if (!snap.empty) return showToast("ID занят");
-            const ref = await aD(cFS(db, ROOT, "channels", "list"), { name, link, owner: user, subscribers: [user], last_msg_time: sT(), viewedBy: [user], isVerified: false });
-            await uD(dFS(db, ROOT, "users", "list", user), { subs: aU(ref.id) });
+            const ref = await addDoc(collection(db, ROOT, "channels", "list"), { name, link, owner: user, subscribers: [user], last_msg_time: serverTimestamp(), viewedBy: [user], isVerified: false });
+            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(ref.id) });
             document.getElementById('createChannelModal').style.display = 'none';
             selectChannel(ref.id);
         };
