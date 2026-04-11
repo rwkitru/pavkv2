@@ -542,7 +542,6 @@
                 const senderName = senderData?.displayName || `@${m.sender}`;
                 const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
                 
-                // Обработка просмотров: если это канал и сообщение не наше, увеличиваем счетчик
                 if (activeChat.type === 'channel' && !isMine && (!m.viewedBy || !m.viewedBy.includes(user))) {
                     updateDoc(doc(db, ROOT, "channels", "list", activeChat.id, "messages", m.id), {
                         viewCount: increment(1),
@@ -603,12 +602,12 @@
             const updates = { displayName: newDisplayName };
             if (newAvatarBase64) {
                 updates.avatar = newAvatarBase64;
-                newAvatarBase64 = null; // Очищаем после использования
             }
             if (newPass.length >= 4) updates.password = newPass;
 
             try {
                 await updateDoc(doc(db, ROOT, "users", "list", user), updates);
+                newAvatarBase64 = null; // Очищаем только после успешного сохранения в БД
                 showToast("Профиль обновлен");
                 document.getElementById('settingsModal').style.display = 'none';
             } catch (err) {
