@@ -36,7 +36,7 @@
         .message-bubble.image-only .msg-image { margin: 0 !important; border-radius: 18px !important; display: block; }
         .message-bubble.image-only .msg-meta-overlay { position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.45); padding: 2px 8px; border-radius: 10px; color: white !important; backdrop-filter: blur(4px); display: flex; align-items: center; gap: 6px; z-index: 5; }
 
-        .views-badge { display: flex; align-items: center; gap: 3px; font-size: 10px; color: #94a3b8; }
+        .views-badge { display: flex; align-items: center; gap: 3px; font-size: 10px; color: #94a3b8; margin-top: 4px; }
         .mine .views-badge { color: #bfdbfe; }
 
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -388,8 +388,11 @@
                     const data = s.data();
                     mySubs = data.subs || [];
                     const avatar = data.avatar || '';
+                    
+                    // Обновляем отображение никнейма и аватарки в сайдбаре
                     document.getElementById('myUsername').textContent = '@' + (data.displayName || name);
                     document.getElementById('setNewDisplayName').value = data.displayName || name;
+                    
                     const sidebarAvatar = document.getElementById('mySidebarAvatar');
                     const settingsAvatar = document.getElementById('settingsAvatarPreview');
                     if(avatar) {
@@ -541,30 +544,15 @@
                 const senderData = allUsers.find(u => u.username === m.sender);
                 const senderName = senderData?.displayName || `@${m.sender}`;
                 const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
-                
-                if (activeChat.type === 'channel' && !isMine && (!m.viewedBy || !m.viewedBy.includes(user))) {
-                    updateDoc(doc(db, ROOT, "channels", "list", activeChat.id, "messages", m.id), {
-                        viewCount: increment(1),
-                        viewedBy: arrayUnion(user)
-                    });
-                }
-
                 let contentHTML = '';
                 if (m.image) contentHTML += `<img src="${m.image}" class="msg-image" onclick="window.open('${m.image}')"/>`;
                 if (m.text) contentHTML += `<div class="break-words ${m.image ? 'mt-2' : ''}">${m.text}</div>`;
-                
-                const viewsHTML = (activeChat.type === 'channel') ? `
-                    <div class="views-badge flex items-center gap-1 opacity-70">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                        <span class="text-[9px] font-bold">${m.viewCount || 0}</span>
-                    </div>` : '';
-
                 return `
                 <div class="message-bubble ${isMine ? 'mine' : ''} ${isImageOnly ? 'image-only' : ''}" data-msg-id="${m.id}">
                     ${!isMine && activeChat.type === 'channel' && !isImageOnly ? `<div class="text-[10px] font-bold text-blue-600 mb-1 flex items-center">${senderName} ${senderData?.isVerified ? VERIFIED_HTML : ''}</div>` : ''}
                     ${contentHTML}
                     <div class="${isImageOnly ? 'msg-meta-overlay' : 'flex items-center justify-end gap-2 mt-1'}">
-                        ${viewsHTML}
+                        ${(activeChat.type === 'channel' && m.viewCount !== undefined) ? `<div class="views-badge"><span class="v-cnt text-[10px] font-medium">${m.viewCount || 0}</span></div>` : ''}
                         <div class="msg-time text-[9px] font-medium ${!isImageOnly && isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
                     </div>
                 </div>`;
@@ -580,39 +568,81 @@
             reader.readAsDataURL(file);
         };
 
-        window.handleAvatarUpload = (input) => {
-            const file = input.files[0];
-            if (!file) return;
-            if (file.size > 1.5 * 1024 * 1024) return showToast("Размер фото > 1.5MB");
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                newAvatarBase64 = e.target.result;
-                const preview = document.getElementById('settingsAvatarPreview');
-                preview.style.backgroundImage = `url(${newAvatarBase64})`;
-                preview.textContent = '';
-            };
-            reader.readAsDataURL(file);
-        };
+window.handleAvatarUpload = (input) => {
+    const file = input.files[0];
+    if (!file) return;
 
-        window.saveProfileChanges = async () => {
-            const newDisplayName = document.getElementById('setNewDisplayName').value.trim();
-            const newPass = document.getElementById('setNewPassword').value;
-            if (!newDisplayName) return showToast("Имя не может быть пустым");
-            
-            const updates = { displayName: newDisplayName };
-            if (newAvatarBase64) {
-                updates.avatar = newAvatarBase64;
-            }
-            if (newPass.length >= 4) updates.password = newPass;
+    // Ограничение чуть меньше, чтобы точно прошло на мобильных (1.2MB)
+    if (file.size > 1.2 * 1024 * 1024) {
+        showToast("Размер фото слишком большой (>1.2MB)");
+        input.value = '';
+        return;
+    }
 
-            try {
-                await updateDoc(doc(db, ROOT, "users", "list", user), updates);
-                newAvatarBase64 = null; // Очищаем только после успешного сохранения в БД
-                showToast("Профиль обновлен");
-                document.getElementById('settingsModal').style.display = 'none';
-            } catch (err) {
-                showToast("Ошибка сохранения");
-            }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        // Записываем новые данные
+        newAvatarBase64 = e.target.result;
+        
+        // Обновляем превью в модальном окне сразу
+        const preview = document.getElementById('settingsAvatarPreview');
+        if (preview) {
+            preview.style.backgroundImage = `url(${newAvatarBase64})`;
+            preview.textContent = '';
+        }
+        showToast("Фото готово к сохранению");
+    };
+    
+    reader.onerror = () => {
+        showToast("Ошибка при чтении файла");
+    };
+
+    reader.readAsDataURL(file);
+    // Очищаем инпут, чтобы можно было выбрать тот же файл повторно
+    input.value = '';
+};
+
+window.saveProfileChanges = async () => {
+    const newDisplayName = document.getElementById('setNewDisplayName').value.trim();
+    const newPass = document.getElementById('setNewPassword').value;
+    
+    if (!newDisplayName) {
+        return showToast("Имя не может быть пустым");
+    }
+    
+    const updates = { 
+        displayName: newDisplayName 
+    };
+
+    // Если была загружена новая аватарка, добавляем её в объект обновления
+    if (newAvatarBase64) {
+        updates.avatar = newAvatarBase64;
+    }
+
+    if (newPass && newPass.length >= 4) {
+        updates.password = newPass;
+    }
+
+    try {
+        const userRef = doc(db, ROOT, "users", "list", user);
+        await updateDoc(userRef, updates);
+        
+        // Важно: обнуляем переменную только после успеха
+        newAvatarBase64 = null; 
+        
+        showToast("✅ Изменения сохранены");
+        
+        // Закрываем модалку через небольшую паузу
+        setTimeout(() => {
+            document.getElementById('settingsModal').style.display = 'none';
+        }, 500);
+        
+    } catch (err) {
+        console.error("Save error:", err);
+        showToast("❌ Ошибка сохранения в базу");
+    }
+};
+            document.getElementById('settingsModal').style.display = 'none';
         };
 
         window.sendMessage = async (imgData = null) => {
@@ -623,7 +653,7 @@
             input.value = '';
             const isChan = currentChat.type === 'channel';
             const colPath = isChan ? "channels" : "direct_chats";
-            const msgData = { sender: user, time: serverTimestamp(), viewCount: isChan ? 1 : 0, viewedBy: [user] };
+            const msgData = { sender: user, time: serverTimestamp(), viewCount: isChan ? 1 : 0 };
             if (text) msgData.text = text;
             if (imgData) msgData.image = imgData;
             try {
@@ -639,16 +669,20 @@
             const c = activeChat.type === 'channel' ? activeChat.data : null;
             const userData = !c ? allUsers.find(u => u.username === activeChat.targetUser) : null;
             const isVerified = c ? c.isVerified : userData?.isVerified;
+            
             const titleName = c ? c.name : (userData?.displayName || `@${activeChat.targetUser}`);
             document.getElementById('headerTitle').innerHTML = titleName + (isVerified ? VERIFIED_HTML : '');
             document.getElementById('headerMeta').textContent = c ? `@${c.link} • ${c.subscribers?.length || 0} подп.` : formatStatus(userData?.last_active);
+            
             const headerAvatar = document.getElementById('headerAvatar');
             const avatarImg = c ? '' : (userData?.avatar || '');
             if(avatarImg) { headerAvatar.style.backgroundImage = `url(${avatarImg})`; headerAvatar.textContent = ''; }
             else { headerAvatar.style.backgroundImage = ''; headerAvatar.textContent = (c ? c.name : activeChat.targetUser)[0].toUpperCase(); headerAvatar.style.backgroundColor = getHashColor(c ? c.name : activeChat.targetUser); }
+            
             if (c) {
                 const subbed = mySubs.includes(activeChat.id);
                 const isOwner = c.owner === user;
+                // Показываем кнопку настроек канала если владелец
                 document.getElementById('channelSettingsBtn').classList.toggle('hidden', !isOwner);
                 document.getElementById('leaveChannelBtn').classList.toggle('hidden', isOwner || !subbed);
                 document.getElementById('messageControls').classList.toggle('hidden', !isOwner);
@@ -671,13 +705,16 @@
             const userData = !isChan ? allUsers.find(u => u.username === activeChat.targetUser) : null;
             const isVerified = isChan ? c.isVerified : userData?.isVerified;
             const isOwner = isChan && c.owner === user;
+            
             const profNameText = isChan ? c.name : (userData?.displayName || `@${activeChat.targetUser}`);
             document.getElementById('profName').innerHTML = profNameText + (isVerified ? VERIFIED_HTML : '');
             document.getElementById('profId').textContent = isChan ? `@${c.link}` : 'Пользователь';
+            
             const profAvatar = document.getElementById('profAvatar');
             const avatarImg = isChan ? '' : (userData?.avatar || '');
             if(avatarImg) { profAvatar.style.backgroundImage = `url(${avatarImg})`; profAvatar.textContent = ''; }
             else { profAvatar.style.backgroundImage = ''; profAvatar.textContent = (isChan ? c.name : activeChat.targetUser)[0].toUpperCase(); profAvatar.style.backgroundColor = getHashColor(isChan ? c.name : activeChat.targetUser); }
+            
             document.getElementById('ownerEditSection').classList.toggle('hidden', !isOwner);
             document.getElementById('subscribersSection').classList.toggle('hidden', !isOwner);
             if (isOwner) {
