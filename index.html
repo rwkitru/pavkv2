@@ -27,6 +27,27 @@
             .main-content { width: 100vw; height: 100%; }
         }
 
+/* Исправление вертикального расположения в шапке */
+.chat-header-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0; /* Важно для работы truncate */
+}
+
+/* Уточняем стили для мета-информации (статуса) */
+#headerMeta {
+    line-height: 1.2;
+    margin-top: 2px;
+}
+
+.user-status {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.2;
+    margin-top: 2px;
+}
+
         .chat-item { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border-radius: 12px; margin: 4px 8px; padding: 12px; display: flex; align-items: center; gap: 12px; position: relative; }
         .chat-item:hover { background: #f1f5f9; transform: translateX(4px); }
         .chat-item.active { background: #eff6ff; }
@@ -112,7 +133,18 @@
 <body class="flex">
 
     <div id="authScreen" class="fixed inset-0 bg-[#f4f7fa] z-[200] flex items-center justify-center p-4 transition-opacity duration-500">
-        <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl w-full max-w-md transform transition-all duration-500 scale-100">
+       <div class="chat-header-info min-w-0">
+    <h3 id="headerTitle" class="font-bold text-gray-800 leading-tight truncate text-sm md:text-base flex items-center">Имя</h3>
+    <p id="headerMeta" class="text-[10px] md:text-xs text-blue-500 truncate">инфо</p>
+</div>
+<div class="chat-header flex items-center p-4 border-b bg-white/80 backdrop-blur-md">
+    <button onclick="goBack()" class="mr-4 md:hidden">...</button>
+    <div class="chat-header-info">
+        <div id="currentChatName" class="font-semibold"></div>
+        <div id="userStatusText" class="user-status"></div>
+    </div>
+</div>
+ <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl w-full max-w-md transform transition-all duration-500 scale-100">
             <h1 class="text-2xl font-bold text-center mb-2" id="authTitle">Регистрация</h1>
             <p class="text-gray-400 text-center mb-8 text-sm" id="authSubtitle">Зарегистрируйтесь или войдите</p>
             <div class="space-y-4">
@@ -485,26 +517,37 @@
             lastRenderedChatIds = currentIds;
             list.innerHTML = '';
             unique.forEach(item => {
-                const isChan = false;
-                const userData = allUsers.find(u => u.username === item.username);
-                const isVerified = userData?.isVerified;
-                const chatId = (item.id || [user, item.username].sort().join("_v_"));
-                const name = (userData?.displayName || `@${item.username}`);
-                const subtext = formatStatus(userData?.last_active);
-                const avatar = (userData?.avatar || '');
-                const div = document.createElement('div');
-                div.className = `chat-item ${activeChat?.id === chatId ? 'active' : ''}`;
-                div.onclick = () => selectUser(item.username);
-                div.innerHTML = `
-                    <div class="avatar shadow-sm" style="background:${avatar ? `url(${avatar})` : getHashColor(name)}; background-size: cover; background-position: center;">${avatar ? '' : (item.username)[0].toUpperCase()}</div>
-                    <div class="flex-1 overflow-hidden">
-                        <div class="font-bold truncate text-gray-800 flex items-center">${name} ${isVerified ? VERIFIED_HTML : ''}</div>
-                        <p class="text-[11px] ${subtext === 'В сети' ? 'text-blue-500 font-medium' : 'text-gray-400'} truncate">${subtext}</p>
-                    </div>
-                    ${unreadStates[chatId] && activeChat?.id !== chatId ? '<div class="unread-badge"></div>' : ''}`;
-                list.appendChild(div);
-            });
-        };
+    const isChan = item.type === 'channel';
+    const userData = !isChan ? allUsers.find(u => u.username === item.username) : null;
+    const isVerified = isChan ? item.isVerified : userData?.isVerified;
+    const chatId = isChan ? item.id : (item.id || [user, item.username].sort().join("_v_"));
+    const name = isChan ? item.name : (userData?.displayName || `@${item.username}`);
+    const subtext = isChan ? `@${item.link}` : formatStatus(userData?.last_active);
+    
+    // ИСПРАВЛЕННАЯ ЛОГИКА АВАТАРА:
+    // Если канал - ищем аватар в данных канала (если ты их туда сохранишь в будущем) 
+    // Если юзер - берем userData.avatar
+    const avatarUrl = isChan ? (item.avatar || '') : (userData?.avatar || '');
+    
+    const div = document.createElement('div');
+    div.className = `chat-item ${activeChat?.id === chatId ? 'active' : ''}`;
+    div.onclick = () => isChan ? selectChannel(item.id) : selectUser(item.username);
+    
+    // Формируем стиль фона: если есть URL - ставим image, если нет - генерируем цвет по хэшу
+    const bgStyle = avatarUrl ? `background-image: url(${avatarUrl});` : `background-color: ${getHashColor(name)};`;
+    const avatarChar = avatarUrl ? '' : (isChan ? item.name : (userData?.username || item.username))[0].toUpperCase();
+
+    div.innerHTML = `
+        <div class="avatar shadow-sm" style="${bgStyle} background-size: cover; background-position: center;">
+            ${avatarChar}
+        </div>
+        <div class="flex-1 overflow-hidden">
+            <div class="font-bold truncate text-gray-800 flex items-center">${name} ${isVerified ? VERIFIED_HTML : ''}</div>
+            <p class="text-[11px] ${subtext === 'В сети' ? 'text-blue-500 font-medium' : 'text-gray-400'} truncate">${subtext}</p>
+        </div>
+        ${unreadStates[chatId] && activeChat?.id !== chatId ? '<div class="unread-badge"></div>' : ''}`;
+    list.appendChild(div);
+});
 
         window.banUser = async (targetId) => {
             const chanId = activeChat.id;
@@ -663,11 +706,36 @@
         window.sendMessage = async (imgData = null) => {
             const input = document.getElementById('msgInput'); const text = input.value.trim(); if (!text && !imgData || !activeChat) return; const currentChat = { ...activeChat }; const colPath = currentChat.type === 'channel' ? "channels" : "direct_chats";
             if (editingMsgId) { try { await updateDoc(doc(db, ROOT, colPath, "list", currentChat.id, "messages", editingMsgId), { text: text, isEdited: true }); editingMsgId = null; input.value = ''; showToast("Изменено"); } catch (e) { showToast("Ошибка редактирования"); } return; }
-            const currentReply = replyTo ? { ...replyTo } : null; input.value = ''; cancelReply();
+         
+  const headerInfo = document.querySelector('.chat-header-info');
+headerInfo.innerHTML = `
+    <div class="font-semibold truncate">${channelData.name}</div>
+    <div class="user-status" id="userStatusText">${formatLastSeen(channelData.last_msg_time)}</div>
+`;
+
+ const currentReply = replyTo ? { ...replyTo } : null; input.value = ''; cancelReply();
             const msgData = { sender: user, time: serverTimestamp(), viewCount: 0, viewedBy: [user], reactions: {} };
             if (text) msgData.text = text; if (imgData) msgData.image = imgData; if (currentReply) msgData.replyTo = currentReply;
             try { await addDoc(collection(db, ROOT, colPath, "list", currentChat.id, "messages"), msgData); await setDoc(doc(db, ROOT, colPath, "list", currentChat.id), { last_msg_time: serverTimestamp(), last_msg_by: user, viewedBy: [user] }, { merge: true }); } catch (e) { showToast("Ошибка отправки"); }
         };
+
+function formatLastSeen(timestamp) {
+    if (!timestamp) return "был(а) недавно";
+    
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diff = (now - date) / 1000; // разница в секундах
+
+    if (diff < 60) return "был(а) только что";
+    if (diff < 3600) return `был(а) ${Math.floor(diff / 60)} мин. назад`;
+    
+    // Если заходил сегодня
+    if (date.toDateString() === now.toDateString()) {
+        return `был(а) сегодня в ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+    }
+    
+    return `был(а) ${date.toLocaleDateString()}`;
+}
 
         function updateUI() {
             if (!activeChat) return;
