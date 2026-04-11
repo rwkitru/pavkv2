@@ -35,15 +35,17 @@
         
         .unread-badge { width: 12px; height: 12px; background: #3b82f6; border-radius: 50%; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); border: 2px solid white; }
 
-        .message-bubble { position: relative; max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 8px; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); align-self: flex-start; animation: slideIn 0.3s ease-out; -webkit-tap-highlight-color: transparent; }
+        .message-bubble { position: relative; max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 12px; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); align-self: flex-start; animation: slideIn 0.3s ease-out; -webkit-tap-highlight-color: transparent; }
         .message-bubble.mine { background: #3b82f6; color: white; border-bottom-left-radius: 18px; border-bottom-right-radius: 4px; align-self: flex-end; animation: slideInRight 0.3s ease-out; }
         
         .message-bubble.image-only { padding: 0 !important; background: transparent !important; box-shadow: none !important; border-radius: 18px !important; }
         .message-bubble.image-only .msg-image { margin: 0 !important; border-radius: 18px !important; display: block; }
         .message-bubble.image-only .msg-meta-overlay { position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.45); padding: 2px 8px; border-radius: 10px; color: white !important; backdrop-filter: blur(4px); display: flex; align-items: center; gap: 6px; z-index: 5; }
 
-        .reaction-badge { position: absolute; bottom: -8px; left: 10px; background: white; padding: 2px 6px; border-radius: 10px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; display: flex; align-items: center; gap: 2px; z-index: 10; border: 1px solid #f1f5f9; }
-        .mine .reaction-badge { left: auto; right: 10px; }
+        /* Реакции под сообщением */
+        .message-reactions { display: flex; flex-wrap: wrap; gap: 4px; position: absolute; bottom: -10px; left: 10px; z-index: 10; }
+        .mine .message-reactions { left: auto; right: 10px; flex-direction: row-reverse; }
+        .reaction-badge { background: white; padding: 2px 6px; border-radius: 10px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #f1f5f9; color: #333; cursor: pointer; display: flex; align-items: center; gap: 2px; }
 
         .views-badge { display: flex; align-items: center; gap: 3px; font-size: 10px; color: #94a3b8; }
         .mine .views-badge { color: #bfdbfe; }
@@ -82,8 +84,14 @@
         .reply-quote { background: rgba(0,0,0,0.05); border-left: 3px solid #3b82f6; padding: 4px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 13px; cursor: pointer; max-width: 100%; }
         .mine .reply-quote { background: rgba(255,255,255,0.15); border-left-color: white; color: white; }
 
-        .context-menu { position: fixed; background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 200px; z-index: 1000; overflow: hidden; transform: scale(0.8); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: center; }
+        /* Контекстное меню с рядом эмодзи */
+        .context-menu { position: fixed; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 220px; z-index: 1000; overflow: hidden; transform: scale(0.8); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: center; }
         .context-menu.active { transform: scale(1); opacity: 1; pointer-events: auto; }
+        
+        .reactions-row { display: flex; justify-content: space-between; padding: 12px 14px; background: #f8fafc; border-bottom: 1px solid #f1f5f9; }
+        .emoji-item { font-size: 20px; cursor: pointer; transition: transform 0.2s; }
+        .emoji-item:active { transform: scale(1.4); }
+
         .context-menu-item { padding: 12px 18px; font-size: 14px; color: #333; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s; border-bottom: 1px solid #f8fafc; }
         .context-menu-item:last-child { border-bottom: none; }
         .context-menu-item:active { background: #f1f5f9; }
@@ -215,32 +223,12 @@
     </main>
 
     <div id="msgContextMenu" class="context-menu">
-        <div class="context-menu-item" id="ctxReaction">
-            <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            Реакция ❤️
         </div>
-        <div class="context-menu-item" id="ctxReply">
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" stroke-width="2"/></svg>
-            Ответить
-        </div>
-        <div class="context-menu-item" id="ctxCopy">
-            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2" stroke-width="2"/></svg>
-            Копировать
-        </div>
-        <div class="context-menu-item" id="ctxEdit">
-            <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2"/></svg>
-            Изменить
-        </div>
-        <div class="context-menu-item danger" id="ctxDelete">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
-            Удалить
-        </div>
-    </div>
 
     <div id="mediaViewer">
         <div class="media-actions">
             <button class="media-btn" id="mediaMoreBtn">
-                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2 s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2 s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2 s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
             </button>
             <button onclick="closeMedia()" class="media-btn">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5"/></svg>
@@ -356,6 +344,7 @@
 
         const ID_REGEX = /^[a-z_][a-z0-9_]{3,11}$/;
         const VERIFIED_HTML = `<span class="verified-badge" title="Подтвержденный аккаунт"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>`;
+        const EMOJI_LIST = ['👍', '❤️', '😂', '🔥', '😭', '😍', '👌'];
 
         let user = null;
         let channels = [];
@@ -653,15 +642,22 @@
                         <span class="text-[9px] font-bold">${m.viewCount || 0}</span>
                     </div>` : '';
 
-                let reactionHTML = '';
-                if (m.likes && m.likes.length > 0) {
-                    reactionHTML = `<div class="reaction-badge" onclick="toggleReaction('${m.id}')">❤️ ${m.likes.length}</div>`;
+                // Отрисовка группированных реакций
+                let reactionsHTML = '';
+                if (m.reactions) {
+                    const counts = {};
+                    Object.values(m.reactions).forEach(emo => counts[emo] = (counts[emo] || 0) + 1);
+                    reactionsHTML = `<div class="message-reactions">`;
+                    for (const [emo, count] of Object.entries(counts)) {
+                        reactionsHTML += `<div class="reaction-badge" onclick="setReaction('${m.id}', '${emo}')">${emo} ${count > 1 ? count : ''}</div>`;
+                    }
+                    reactionsHTML += `</div>`;
                 }
 
                 return `
                 <div class="message-bubble ${isMine ? 'mine' : ''} ${isImageOnly ? 'image-only' : ''}" 
                      data-msg-id="${m.id}" 
-                     ondblclick="toggleReaction('${m.id}')"
+                     ondblclick="setReaction('${m.id}', '❤️')"
                      oncontextmenu="handleLongPress(event, '${m.id}', '${senderName}', '${(m.text || '').replace(/'/g, "\\'")}', ${!!m.image}, ${isMine})"
                      ontouchstart="startTouch(event, '${m.id}', '${senderName}', '${(m.text || '').replace(/'/g, "\\'")}', ${!!m.image}, ${isMine})"
                      ontouchend="endTouch()">
@@ -672,7 +668,7 @@
                         ${viewsHTML}
                         <div class="msg-time text-[9px] font-medium ${!isImageOnly && isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
                     </div>
-                    ${reactionHTML}
+                    ${reactionsHTML}
                 </div>`;
             }).join('');
             area.scrollTop = area.scrollHeight;
@@ -691,37 +687,86 @@
             showMsgMenu(e.clientX, e.clientY, id, sender, text, hasImg, isMine);
         };
 
+        // --- Обновленное Контекстное Меню ---
         window.showMsgMenu = (x, y, id, sender, text, hasImg, isMine) => {
             const menu = document.getElementById('msgContextMenu');
-            const menuW = 200;
-            const menuH = 150;
+            const menuW = 220;
+            const menuH = 200;
             let left = x - 20;
             let top = y - 20;
             if (x + menuW > window.innerWidth) left = x - menuW + 20;
             if (y + menuH > window.innerHeight) top = y - menuH;
             
+            // Динамически создаем содержимое меню (реакции + кнопки)
+            let reactionsHTML = `<div class="reactions-row">`;
+            EMOJI_LIST.forEach(emo => {
+                reactionsHTML += `<span class="emoji-item" onclick="setReaction('${id}', '${emo}')">${emo}</span>`;
+            });
+            reactionsHTML += `</div>`;
+
+            menu.innerHTML = `
+                ${reactionsHTML}
+                <div class="context-menu-item" id="ctxReply">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" stroke-width="2"/></svg>
+                    Ответить
+                </div>
+                <div class="context-menu-item" id="ctxCopy">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2" stroke-width="2"/></svg>
+                    Копировать
+                </div>
+                ${isMine && !hasImg ? `
+                <div class="context-menu-item" id="ctxEdit">
+                    <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2"/></svg>
+                    Изменить
+                </div>` : ''}
+                ${isMine ? `
+                <div class="context-menu-item danger" id="ctxDelete">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
+                    Удалить
+                </div>` : ''}
+            `;
+
             menu.style.top = `${top}px`;
             menu.style.left = `${left}px`;
             menu.classList.add('active');
 
-            document.getElementById('ctxEdit').style.display = (isMine && !hasImg) ? 'flex' : 'none';
-            document.getElementById('ctxDelete').style.display = isMine ? 'flex' : 'none';
-
-            document.getElementById('ctxReaction').onclick = () => { toggleReaction(id); menu.classList.remove('active'); };
+            // Привязываем обработчики
             document.getElementById('ctxReply').onclick = () => { initReply(id, sender, text, hasImg); menu.classList.remove('active'); };
             document.getElementById('ctxCopy').onclick = () => { 
                 if(!text && hasImg) { showToast("Это фото без текста"); }
                 else { navigator.clipboard.writeText(text); showToast("Скопировано"); }
                 menu.classList.remove('active'); 
             };
-            document.getElementById('ctxEdit').onclick = () => { initEdit(id, text); menu.classList.remove('active'); };
-            document.getElementById('ctxDelete').onclick = () => { deleteMessage(id); menu.classList.remove('active'); };
+            if(document.getElementById('ctxEdit')) document.getElementById('ctxEdit').onclick = () => { initEdit(id, text); menu.classList.remove('active'); };
+            if(document.getElementById('ctxDelete')) document.getElementById('ctxDelete').onclick = () => { deleteMessage(id); menu.classList.remove('active'); };
 
             const close = () => { menu.classList.remove('active'); document.removeEventListener('click', close); };
             setTimeout(() => document.addEventListener('click', close), 10);
         };
 
-        // --- Pinch to Zoom & Pan & Wheel Control ---
+        // --- Установка Реакции ---
+        window.setReaction = async (msgId, emoji) => {
+            if (!activeChat) return;
+            const isChan = activeChat.type === 'channel';
+            const colPath = isChan ? "channels" : "direct_chats";
+            const msgRef = doc(db, ROOT, colPath, "list", activeChat.id, "messages", msgId);
+            
+            const snap = await getDoc(msgRef);
+            if (!snap.exists()) return;
+            
+            const currentReactions = snap.data().reactions || {};
+            // Если такая же реакция уже стоит от этого юзера - убираем её
+            if (currentReactions[user] === emoji) {
+                delete currentReactions[user];
+            } else {
+                currentReactions[user] = emoji;
+            }
+
+            await updateDoc(msgRef, { reactions: currentReactions });
+            document.getElementById('msgContextMenu').classList.remove('active');
+        };
+
+        // --- Остальные функции (Pinch to Zoom, Pan, etc) ---
         let scale = 1, lastScale = 1;
         let startDist = 0;
         let isDragging = false;
@@ -805,8 +850,6 @@
 
         window.closeMedia = () => { viewer.style.display = 'none'; mediaOptions.style.display = 'none'; };
 
-        // --- Новые функции: Удаление, Редактирование, Реакции ---
-
         window.deleteMessage = async (msgId) => {
             if (!activeChat) return;
             const isChan = activeChat.type === 'channel';
@@ -824,23 +867,6 @@
             input.focus();
             showToast("Редактирование...");
         };
-
-        window.toggleReaction = async (msgId) => {
-            if (!activeChat) return;
-            const isChan = activeChat.type === 'channel';
-            const colPath = isChan ? "channels" : "direct_chats";
-            const msgRef = doc(db, ROOT, colPath, "list", activeChat.id, "messages", msgId);
-            const snap = await getDoc(msgRef);
-            if (!snap.exists()) return;
-            const likes = snap.data().likes || [];
-            if (likes.includes(user)) {
-                await updateDoc(msgRef, { likes: arrayRemove(user) });
-            } else {
-                await updateDoc(msgRef, { likes: arrayUnion(user) });
-            }
-        };
-
-        // --- Вспомогательные функции ---
 
         window.initReply = (id, sender, text, hasImg) => {
             replyTo = { id, sender, text: hasImg ? "Фотография" : text };
@@ -940,7 +966,7 @@
             input.value = '';
             cancelReply();
             
-            const msgData = { sender: user, time: serverTimestamp(), viewCount: isChan ? 1 : 0, viewedBy: [user], likes: [] };
+            const msgData = { sender: user, time: serverTimestamp(), viewCount: isChan ? 1 : 0, viewedBy: [user], reactions: {} };
             if (text) msgData.text = text;
             if (imgData) msgData.image = imgData;
             if (currentReply) msgData.replyTo = currentReply;
