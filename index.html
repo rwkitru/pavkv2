@@ -277,6 +277,16 @@
         </div>
     </div>
 
+<div id="messageControls" class="flex items-center gap-2">
+    </div>
+
+<div id="subscriberControls" class="hidden flex flex-col items-center justify-center w-full">
+    <button id="joinBtn" onclick="toggleJoin()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold btn-animate shadow-sm text-sm">
+        Вступить в канал
+    </button>
+    <p id="joinedLabel" class="hidden text-gray-500 text-sm font-bold py-2">Вы подписаны</p>
+</div>
+
     <div id="createChannelModal" class="modal-overlay" style="display:none;" onclick="if(event.target === this) this.style.display='none'">
         <div class="bg-white p-6 rounded-3xl w-full max-w-[400px] shadow-2xl transform transition-transform">
             <h2 class="text-xl font-bold mb-2">Создать канал</h2>
@@ -997,26 +1007,29 @@
         };
 
         function updateUI() {
-            if (!activeChat) return;
-            document.getElementById('noChannelView').classList.add('hidden');
-            document.getElementById('activeChannelContent').classList.remove('hidden');
-            const c = activeChat.type === 'channel' ? activeChat.data : null;
-            const userData = !c ? allUsers.find(u => u.username === activeChat.targetUser) : null;
-            const isVerified = c ? c.isVerified : userData?.isVerified;
-            const titleName = c ? c.name : (userData?.displayName || `@${activeChat.targetUser}`);
-            document.getElementById('headerTitle').innerHTML = titleName + (isVerified ? VERIFIED_HTML : '');
-            document.getElementById('headerMeta').textContent = c ? `@${c.link} • ${c.subscribers?.length || 0} подп.` : formatStatus(userData?.last_active);
-            const headerAvatar = document.getElementById('headerAvatar');
-            const avatarImg = c ? '' : (userData?.avatar || '');
-            if(avatarImg) { headerAvatar.style.backgroundImage = `url(${avatarImg})`; headerAvatar.textContent = ''; }
-            else { headerAvatar.style.backgroundImage = ''; headerAvatar.textContent = (c ? c.name : activeChat.targetUser)[0].toUpperCase(); headerAvatar.style.backgroundColor = getHashColor(c ? c.name : activeChat.targetUser); }
-            if (c) {
-                const isOwner = c.owner === user;
-                document.getElementById('messageControls').classList.toggle('hidden', !isOwner && !mySubs.includes(activeChat.id));
-            } else {
-                document.getElementById('messageControls').classList.remove('hidden');
-            }
+    if (!activeChat) return;
+    
+    const c = activeChat.type === 'channel' ? activeChat.data : null;
+    
+    if (c) {
+        const isSubbed = mySubs.includes(activeChat.id); // Проверка наличия в подписках
+        const isOwner = c.owner === user;
+
+        // Показываем управление сообщением только владельцу
+        document.getElementById('messageControls').classList.toggle('hidden', !isOwner);
+        // Показываем блок подписки всем остальным
+        document.getElementById('subscriberControls').classList.toggle('hidden', isOwner);
+
+        if (!isOwner) {
+            document.getElementById('joinBtn').classList.toggle('hidden', isSubbed);
+            document.getElementById('joinedLabel').classList.toggle('hidden', !isSubbed);
         }
+    } else {
+        // Для личных чатов всегда показываем поле ввода
+        document.getElementById('messageControls').classList.remove('hidden');
+        document.getElementById('subscriberControls').classList.add('hidden');
+    }
+}
 
         window.openProfile = () => { renderProfileContent(); document.getElementById('profileModal').style.display = 'flex'; };
 
