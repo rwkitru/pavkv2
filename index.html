@@ -36,7 +36,24 @@
         
         .unread-badge { width: 12px; height: 12px; background: #3b82f6; border-radius: 50%; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); border: 2px solid white; }
 
-        .message-bubble { position: relative; max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; margin-bottom: 12px; background: #fff; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); align-self: flex-start; animation: slideIn 0.3s ease-out; -webkit-tap-highlight-color: transparent; }
+        .message-bubble { 
+    position: relative; 
+    max-width: 85%; 
+    padding: 10px 14px; 
+    border-radius: 18px; 
+    font-size: 15px; 
+    line-height: 1.4; 
+    margin-bottom: 12px; 
+    background: #fff; 
+    border-bottom-left-radius: 4px; 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06); 
+    align-self: flex-start; 
+    animation: slideIn 0.3s ease-out; 
+    -webkit-tap-highlight-color: transparent;
+    /* Добавь эти две строки ниже: */
+    white-space: pre-wrap; 
+    word-break: break-word; 
+}
         .message-bubble.mine { background: #3b82f6; color: white; border-bottom-left-radius: 18px; border-bottom-right-radius: 4px; align-self: flex-end; animation: slideInRight 0.3s ease-out; }
         
         .message-bubble.image-only { padding: 0 !important; background: transparent !important; box-shadow: none !important; border-radius: 18px !important; }
@@ -1004,12 +1021,25 @@
             const userData = !c ? allUsers.find(u => u.username === activeChat.targetUser) : null;
             const isVerified = c ? c.isVerified : userData?.isVerified;
             const titleName = c ? c.name : (userData?.displayName || `@${activeChat.targetUser}`);
-            document.getElementById('headerTitle').innerHTML = titleName + (isVerified ? VERIFIED_HTML : '');
+            
+            // Кнопка подписки
+            let joinBtn = '';
+            if (c && c.owner !== user && !mySubs.includes(activeChat.id)) {
+                joinBtn = `<button onclick="toggleJoin()" class="ml-2 bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full font-bold animate-bounce">Подписаться</button>`;
+            }
+
+            document.getElementById('headerTitle').innerHTML = titleName + (isVerified ? VERIFIED_HTML : '') + joinBtn;
             document.getElementById('headerMeta').textContent = c ? `@${c.link} • ${c.subscribers?.length || 0} подп.` : formatStatus(userData?.last_active);
+            
             const headerAvatar = document.getElementById('headerAvatar');
             const avatarImg = c ? '' : (userData?.avatar || '');
             if(avatarImg) { headerAvatar.style.backgroundImage = `url(${avatarImg})`; headerAvatar.textContent = ''; }
-            else { headerAvatar.style.backgroundImage = ''; headerAvatar.textContent = (c ? c.name : activeChat.targetUser)[0].toUpperCase(); headerAvatar.style.backgroundColor = getHashColor(c ? c.name : activeChat.targetUser); }
+            else { 
+                headerAvatar.style.backgroundImage = ''; 
+                headerAvatar.textContent = (c ? c.name : activeChat.targetUser)[0].toUpperCase(); 
+                headerAvatar.style.backgroundColor = getHashColor(c ? c.name : activeChat.targetUser); 
+            }
+            
             if (c) {
                 const isOwner = c.owner === user;
                 document.getElementById('messageControls').classList.toggle('hidden', !isOwner && !mySubs.includes(activeChat.id));
