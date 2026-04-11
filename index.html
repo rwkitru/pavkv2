@@ -506,7 +506,7 @@
             renderChatList();
         }
 
-        let lastMessagesData = []; 
+let lastMessagesData = []; 
         function renderMessages(msgs) {
             const area = document.getElementById('messagesArea');
             if (msgs.length === 0) {
@@ -537,16 +537,16 @@
                     <div class="message-bubble ${isMine ? 'mine' : ''}" data-msg-id="${m.id}">
                         ${!isMine && activeChat.type === 'channel' ? `<div class="text-[10px] font-bold text-blue-600 mb-1 flex items-center">@${m.sender} ${isVerified ? VERIFIED_HTML : ''}</div>` : ''}
                         ${contentHTML}
-                        <div class="flex items-center justify-end gap-2 mt-1">
+                        <div class="flex items-center justify-end gap-2 mt-1 select-none">
                             ${activeChat.type === 'channel' ? `
-                                <div class="views-badge flex items-center gap-1 leading-none">
-                                    <svg class="w-3 h-3 mb-[1px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path>
-                                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path>
-                                    </svg>
-                                    <span class="v-cnt text-[10px]">${m.viewCount || 0}</span>
-                                </div>` : ''}
-                            <div class="msg-time text-[9px] ${isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
+                            <div class="views-badge flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom: 1px;">
+                                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path>
+                                    <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path>
+                                </svg>
+                                <span class="v-cnt text-[10px] font-medium">${m.viewCount || 0}</span>
+                            </div>` : ''}
+                            <div class="msg-time text-[9px] font-medium ${isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
                         </div>
                     </div>`;
                 }).join('');
