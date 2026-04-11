@@ -340,8 +340,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        const ROOT = "pnavkv2_v8"; 
-        const APP_VERSION = "8.0";
+        const ROOT = "pnavkv2_v9"; 
+        const APP_VERSION = "9.0";
 
         const ID_REGEX = /^[a-z_][a-z0-9_]{3,11}$/;
         const VERIFIED_HTML = `<span class="verified-badge" title="Подтвержденный аккаунт"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>`;
@@ -431,7 +431,14 @@
         function formatStatus(lastActive) {
             if (!lastActive) return "Неизвестно";
             const now = Date.now();
-            const last = lastActive.seconds * 1000;
+            let last;
+            if (lastActive && typeof lastActive.toMillis === 'function') {
+                last = lastActive.toMillis();
+            } else if (lastActive && lastActive.seconds) {
+                last = lastActive.seconds * 1000;
+            } else {
+                return "Неизвестно";
+            }
             const diff = now - last;
             if (diff < 60000) return "В сети";
             return `Был(а) в сети в ${new Date(last).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
