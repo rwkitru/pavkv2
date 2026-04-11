@@ -360,6 +360,7 @@
         let newAvatarBase64 = null;
         let replyTo = null;
         let editingMsgId = null;
+        let currentMessagesCount = 0; // Для отслеживания изменений в списке сообщений
 
         const initAuth = async () => {
           const currentVersion = localStorage.getItem('pnavkv2_app_version');
@@ -576,6 +577,7 @@
             const c = channels.find(x => x.id === id);
             activeChat = { id, type: 'channel', data: c };
             lastMessagesData = []; 
+            currentMessagesCount = 0; // Сброс счетчика при смене чата
             document.getElementById('messagesArea').innerHTML = '';
             updateUI();
             updateDoc(doc(db, ROOT, "channels", "list", id), { viewedBy: arrayUnion(user) });
@@ -587,6 +589,7 @@
             if(activeChat?.id === chatId) return;
             activeChat = { id: chatId, type: 'direct', targetUser };
             lastMessagesData = [];
+            currentMessagesCount = 0; // Сброс счетчика при смене чата
             document.getElementById('messagesArea').innerHTML = '';
             updateUI();
             const chatRef = doc(db, ROOT, "direct_chats", "list", chatId);
@@ -610,6 +613,11 @@
         function renderMessages(msgs) {
             const area = document.getElementById('messagesArea');
             const sortedMsgs = [...msgs].sort((a, b) => (a.time?.toMillis() || Date.now() + 10000) - (b.time?.toMillis() || Date.now() + 10000));
+            
+            // Проверяем, добавились ли новые сообщения или это просто обновление существующих
+            const isNewMessageAdded = sortedMsgs.length > currentMessagesCount;
+            currentMessagesCount = sortedMsgs.length;
+
             area.innerHTML = sortedMsgs.map(m => {
                 const isMine = m.sender === user;
                 const isImageOnly = m.image && !m.text;
@@ -672,7 +680,11 @@
                     ${reactionsHTML}
                 </div>`;
             }).join('');
-            area.scrollTop = area.scrollHeight;
+            
+            // Листаем вниз только если добавлено новое сообщение
+            if (isNewMessageAdded) {
+                area.scrollTop = area.scrollHeight;
+            }
         }
 
         // --- Обработка Long Press ---
