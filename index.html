@@ -181,8 +181,8 @@
                     <button onclick="document.getElementById('avatarInput').click()" class="text-xs text-blue-600 font-bold hover:underline">Сменить фото профиля</button>
                 </div>
                 <div class="space-y-2">
-                    <label class="text-[10px] text-gray-400 font-bold uppercase ml-2">Никнейм</label>
-                    <input type="text" id="setNewUsername" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-sm" placeholder="Новый никнейм">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase ml-2">Юзернейм (Отображаемое имя)</label>
+                    <input type="text" id="setNewDisplayName" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-blue-400 text-sm" placeholder="Новое имя">
                 </div>
                 <div class="space-y-2">
                     <label class="text-[10px] text-gray-400 font-bold uppercase ml-2">Новый пароль</label>
@@ -332,7 +332,8 @@
                 if (snap.exists()) return showToast("Ник занят");
                 let localAccounts = JSON.parse(localStorage.getItem('pnavkv2_created_accounts') || "[]");
                 if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) return showToast("Лимит: 2 аккаунта на устройство");
-                await setDoc(uRef, { username: nameInput, password: pass, subs: [], type: 'user', last_active: serverTimestamp(), isVerified: false });
+                // Добавляем displayName по умолчанию равным username
+                await setDoc(uRef, { username: nameInput, displayName: nameInput, password: pass, subs: [], type: 'user', last_active: serverTimestamp(), isVerified: false });
                 if (!localAccounts.includes(nameInput)) {
                     localAccounts.push(nameInput);
                     localStorage.setItem('pnavkv2_created_accounts', JSON.stringify(localAccounts));
@@ -365,7 +366,7 @@
             document.getElementById('appSidebar').style.display = 'flex';
             document.getElementById('chatView').style.display = 'flex';
             document.getElementById('myUsername').textContent = '@' + name;
-            document.getElementById('setNewUsername').value = name;
+            
             updateLastActive();
             setInterval(updateLastActive, 30000);
             
@@ -386,6 +387,7 @@
                     const data = s.data();
                     mySubs = data.subs || [];
                     const avatar = data.avatar || '';
+                    document.getElementById('setNewDisplayName').value = data.displayName || name;
                     const sidebarAvatar = document.getElementById('mySidebarAvatar');
                     const settingsAvatar = document.getElementById('settingsAvatarPreview');
                     if(avatar) {
@@ -443,7 +445,8 @@
                 const userData = !isChan ? allUsers.find(u => u.username === item.username) : null;
                 const isVerified = isChan ? item.isVerified : userData?.isVerified;
                 const chatId = isChan ? item.id : (item.id || [user, item.username].sort().join("_v_"));
-                const name = isChan ? item.name : `@${item.username}`;
+                // Используем displayName для отображения ника пользователя
+                const name = isChan ? item.name : (userData?.displayName || `@${item.username}`);
                 const subtext = isChan ? `@${item.link}` : formatStatus(userData?.last_active);
                 const avatar = isChan ? '' : (userData?.avatar || '');
                 const div = document.createElement('div');
@@ -460,6 +463,40 @@
             });
         };
 
+        // --- УПРАВЛЕНИЕ КАНАЛАМИ ---
+        window.banUser = async (targetId) => {
+            const chanId = activeChat.id;
+            await updateDoc(doc(db, ROOT, "channels", "list", chanId), { subscribers: arrayRemove(targetId) });
+            await updateDoc(doc(db, ROOT, "users", "list", targetId), { subs: arrayRemove(chanId) });
+            showToast(`@${targetId} исключен`);
+            renderProfileContent();
+        };
+
+        window.updateChannelData = async () => {
+            const name = document.getElementById('editNameInput').value.trim();
+            const link = document.getElementById('editIdInput').value.trim().toLowerCase().replace('@', '');
+            if (!name || !ID_REGEX.test(link)) return showToast("Некорректные данные");
+            const querySnap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
+            if (querySnap.docs.find(d => d.id !== activeChat.id)) return showToast("Этот ID уже занят");
+            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { name, link });
+            showToast("Данные обновлены");
+        };
+
+        window.toggleJoin = async () => {
+            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(activeChat.id) });
+            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayUnion(user) });
+            showToast("Вы подписались!");
+        };
+
+        window.leaveCurrentChannel = async () => {
+            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayRemove(activeChat.id) });
+            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayRemove(user) });
+            document.getElementById('noChannelView').classList.remove('hidden');
+            document.getElementById('activeChannelContent').classList.add('hidden');
+            activeChat = null;
+        };
+
+        // --- МЕССЕНДЖЕР ---
         window.selectChannel = (id) => {
             if(activeChat?.id === id) return;
             const c = channels.find(x => x.id === id);
@@ -503,13 +540,15 @@
                 const isMine = m.sender === user;
                 const isImageOnly = m.image && !m.text;
                 const senderData = allUsers.find(u => u.username === m.sender);
+                // Использование displayName отправителя
+                const senderName = senderData?.displayName || `@${m.sender}`;
                 const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
                 let contentHTML = '';
                 if (m.image) contentHTML += `<img src="${m.image}" class="msg-image" onclick="window.open('${m.image}')"/>`;
                 if (m.text) contentHTML += `<div class="break-words ${m.image ? 'mt-2' : ''}">${m.text}</div>`;
                 return `
                 <div class="message-bubble ${isMine ? 'mine' : ''} ${isImageOnly ? 'image-only' : ''}" data-msg-id="${m.id}">
-                    ${!isMine && activeChat.type === 'channel' && !isImageOnly ? `<div class="text-[10px] font-bold text-blue-600 mb-1 flex items-center">@${m.sender} ${senderData?.isVerified ? VERIFIED_HTML : ''}</div>` : ''}
+                    ${!isMine && activeChat.type === 'channel' && !isImageOnly ? `<div class="text-[10px] font-bold text-blue-600 mb-1 flex items-center">${senderName} ${senderData?.isVerified ? VERIFIED_HTML : ''}</div>` : ''}
                     ${contentHTML}
                     <div class="${isImageOnly ? 'msg-meta-overlay' : 'flex items-center justify-end gap-2 mt-1'}">
                         ${(activeChat.type === 'channel' && m.viewCount !== undefined) ? `<div class="views-badge"><span class="v-cnt text-[10px] font-medium">${m.viewCount || 0}</span></div>` : ''}
@@ -542,26 +581,15 @@
         };
 
         window.saveProfileChanges = async () => {
-            const newName = document.getElementById('setNewUsername').value.trim().toLowerCase().replace('@', '');
+            const newDisplayName = document.getElementById('setNewDisplayName').value.trim();
             const newPass = document.getElementById('setNewPassword').value;
-            if (!ID_REGEX.test(newName)) return showToast("Некорректный никнейм");
+            if (!newDisplayName) return showToast("Имя не может быть пустым");
             
-            const updates = {};
+            const updates = { displayName: newDisplayName };
             if (newAvatarBase64) updates.avatar = newAvatarBase64;
             if (newPass.length >= 4) updates.password = newPass;
 
-            if (newName !== user) {
-                const check = await getDoc(doc(db, ROOT, "users", "list", newName));
-                if (check.exists()) return showToast("Ник уже занят");
-                const oldData = (await getDoc(doc(db, ROOT, "users", "list", user))).data();
-                await setDoc(doc(db, ROOT, "users", "list", newName), { ...oldData, ...updates, username: newName });
-                await deleteDoc(doc(db, ROOT, "users", "list", user));
-                user = newName;
-                localStorage.setItem('pnavkv2_user', newName);
-                document.getElementById('myUsername').textContent = '@' + newName;
-            } else if (Object.keys(updates).length > 0) {
-                await updateDoc(doc(db, ROOT, "users", "list", user), updates);
-            }
+            await updateDoc(doc(db, ROOT, "users", "list", user), updates);
             showToast("Профиль обновлен");
             document.getElementById('settingsModal').style.display = 'none';
         };
@@ -590,12 +618,16 @@
             const c = activeChat.type === 'channel' ? activeChat.data : null;
             const userData = !c ? allUsers.find(u => u.username === activeChat.targetUser) : null;
             const isVerified = c ? c.isVerified : userData?.isVerified;
-            document.getElementById('headerTitle').innerHTML = (c ? c.name : `@${activeChat.targetUser}`) + (isVerified ? VERIFIED_HTML : '');
+            
+            const titleName = c ? c.name : (userData?.displayName || `@${activeChat.targetUser}`);
+            document.getElementById('headerTitle').innerHTML = titleName + (isVerified ? VERIFIED_HTML : '');
             document.getElementById('headerMeta').textContent = c ? `@${c.link} • ${c.subscribers?.length || 0} подп.` : formatStatus(userData?.last_active);
+            
             const headerAvatar = document.getElementById('headerAvatar');
             const avatarImg = c ? '' : (userData?.avatar || '');
             if(avatarImg) { headerAvatar.style.backgroundImage = `url(${avatarImg})`; headerAvatar.textContent = ''; }
             else { headerAvatar.style.backgroundImage = ''; headerAvatar.textContent = (c ? c.name : activeChat.targetUser)[0].toUpperCase(); headerAvatar.style.backgroundColor = getHashColor(c ? c.name : activeChat.targetUser); }
+            
             if (c) {
                 const subbed = mySubs.includes(activeChat.id);
                 const isOwner = c.owner === user;
@@ -619,12 +651,16 @@
             const userData = !isChan ? allUsers.find(u => u.username === activeChat.targetUser) : null;
             const isVerified = isChan ? c.isVerified : userData?.isVerified;
             const isOwner = isChan && c.owner === user;
-            document.getElementById('profName').innerHTML = (isChan ? c.name : `@${activeChat.targetUser}`) + (isVerified ? VERIFIED_HTML : '');
+            
+            const profNameText = isChan ? c.name : (userData?.displayName || `@${activeChat.targetUser}`);
+            document.getElementById('profName').innerHTML = profNameText + (isVerified ? VERIFIED_HTML : '');
             document.getElementById('profId').textContent = isChan ? `@${c.link}` : 'Пользователь';
+            
             const profAvatar = document.getElementById('profAvatar');
             const avatarImg = isChan ? '' : (userData?.avatar || '');
             if(avatarImg) { profAvatar.style.backgroundImage = `url(${avatarImg})`; profAvatar.textContent = ''; }
             else { profAvatar.style.backgroundImage = ''; profAvatar.textContent = (isChan ? c.name : activeChat.targetUser)[0].toUpperCase(); profAvatar.style.backgroundColor = getHashColor(isChan ? c.name : activeChat.targetUser); }
+            
             document.getElementById('ownerEditSection').classList.toggle('hidden', !isOwner);
             document.getElementById('subscribersSection').classList.toggle('hidden', !isOwner);
             if (isOwner) {
@@ -636,9 +672,10 @@
                 (c.subscribers || []).forEach(subId => {
                     const subData = allUsers.find(u => u.username === subId);
                     const subAvatar = subData?.avatar || '';
+                    const subName = subData?.displayName || `@${subId}`;
                     const div = document.createElement('div');
                     div.className = "flex items-center justify-between p-2 bg-gray-50 rounded-xl";
-                    div.innerHTML = `<div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-cover bg-center" style="background:${subAvatar ? `url(${subAvatar})` : getHashColor(subId)}">${subAvatar ? '' : subId[0].toUpperCase()}</div><span class="text-sm font-medium flex items-center">@${subId} ${subData?.isVerified ? VERIFIED_HTML : ''}</span></div>
+                    div.innerHTML = `<div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-cover bg-center" style="background:${subAvatar ? `url(${subAvatar})` : getHashColor(subId)}">${subAvatar ? '' : subId[0].toUpperCase()}</div><span class="text-sm font-medium flex items-center">${subName} ${subData?.isVerified ? VERIFIED_HTML : ''}</span></div>
                         ${subId !== user ? `<button onclick="banUser('${subId}')" class="text-[10px] text-red-500 font-bold hover:bg-red-100 px-2 py-1 rounded-lg transition-colors">БАН</button>` : ''}`;
                     list.appendChild(div);
                 });
