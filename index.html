@@ -307,7 +307,7 @@
                 </div>
                 <div id="profMeta" class="text-left border-t pt-4 space-y-2"></div>
             </div>
-            <button onclick="document.getElementById('profileModal').style.display='none'" class="mt-6 w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold btn-animate">Закрыть</button>
+            <button onclick="document.getElementById('profileModal').style.display='none'" class="mt-6 <button onclick="document.getElementById('profileModal').style.display='none'" class="mt-6 w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold btn-animate">Закрыть</button>
         </div>
     </div>
 
@@ -347,7 +347,7 @@
             const saved = localStorage.getItem('pnavkv2_user');
             if (u && saved) {
                 user = saved;
-                const snap = await getDoc(doc(db, ROOT, \"users\", \"list\", user));
+                const snap = await getDoc(doc(db, ROOT, "users", "list", user));
                 if (snap.exists()) {
                     userData = snap.data();
                     startApp();
@@ -368,26 +368,26 @@
         window.handleAuth = async () => {
             const name = document.getElementById('authUsername').value.trim();
             const pass = document.getElementById('authPassword').value.trim();
-            if (!ID_REGEX.test(name)) return showToast(\"Никнейм от 4 до 12 символов\");
-            if (pass.length < 4) return showToast(\"Пароль слишком короткий\");
+            if (!ID_REGEX.test(name)) return showToast("Никнейм от 4 до 12 символов");
+            if (pass.length < 4) return showToast("Пароль слишком короткий");
 
             try {
                 await signInAnonymously(auth);
-                const userRef = doc(db, ROOT, \"users\", \"list\", name);
+                const userRef = doc(db, ROOT, "users", "list", name);
                 const snap = await getDoc(userRef);
 
                 if (authMode === 'register') {
-                    if (snap.exists()) return showToast(\"Никнейм занят\");
-                    userData = { name, pass, subs: [], joined: serverTimestamp(), photoURL: \"\" };
+                    if (snap.exists()) return showToast("Никнейм занят");
+                    userData = { name, pass, subs: [], joined: serverTimestamp(), photoURL: "" };
                     await setDoc(userRef, userData);
                 } else {
-                    if (!snap.exists() || snap.data().pass !== pass) return showToast(\"Ошибка входа\");
+                    if (!snap.exists() || snap.data().pass !== pass) return showToast("Ошибка входа");
                     userData = snap.data();
                 }
                 user = name;
                 localStorage.setItem('pnavkv2_user', user);
                 startApp();
-            } catch (e) { showToast(\"Ошибка сервера\"); }
+            } catch (e) { showToast("Ошибка сервера"); }
         };
 
         function startApp() {
@@ -415,11 +415,11 @@
         }
 
         function initSync() {
-            onSnapshot(collection(db, ROOT, \"users\", \"list\"), (snap) => {
+            onSnapshot(collection(db, ROOT, "users", "list"), (snap) => {
                 allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderChatList();
             });
-            onSnapshot(query(collection(db, ROOT, \"channels\", \"list\")), (snap) => {
+            onSnapshot(query(collection(db, ROOT, "channels", "list")), (snap) => {
                 channelsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderChatList();
             });
@@ -432,7 +432,7 @@
             let items = [];
             if (search) {
                 items = allUsers.filter(u => u.id !== user && u.id.toLowerCase().includes(search))
-                    .map(u => ({ id: u.id, name: u.id, type: 'user', photoURL: u.photoURL, last_msg: \"Личное сообщение\", last_msg_time: null }));
+                    .map(u => ({ id: u.id, name: u.id, type: 'user', photoURL: u.photoURL, last_msg: "Личное сообщение", last_msg_time: null }));
             } else {
                 items = channelsData.filter(c => userData.subs && userData.subs.includes(c.id))
                     .sort((a, b) => (b.last_msg_time?.toMillis() || 0) - (a.last_msg_time?.toMillis() || 0));
@@ -449,28 +449,26 @@
                 el.className = `chat-item ${currentChannel === ch.id ? 'active' : ''}`;
                 el.onclick = () => selectChannel(ch.id, ch.type === 'user');
 
-                // --- ФИКС АВАТАРКИ ---
-                const avatarBg = ch.photoURL ? `url(${ch.photoURL})` : 'none';
-                const avatarColor = ch.photoURL ? 'transparent' : getHashColor(ch.name);
-                const initial = ch.photoURL ? '' : ch.name[0].toUpperCase();
+                const avBg = ch.photoURL ? `url(${ch.photoURL})` : 'none';
+                const avCol = ch.photoURL ? 'transparent' : getHashColor(ch.name);
+                const avInitial = ch.photoURL ? '' : ch.name[0].toUpperCase();
 
-                // --- ФИКС ВРЕМЕНИ ---
-                let timeStr = '';
+                let timeStr = "";
                 if (ch.last_msg_time) {
                     const date = ch.last_msg_time.toDate ? ch.last_msg_time.toDate() : new Date(ch.last_msg_time);
                     timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 }
 
                 el.innerHTML = `
-                    <div class=\"avatar shadow-sm\" style=\"background-image: ${avatarBg}; background-color: ${avatarColor}\">${initial}</div>
-                    <div class=\"flex-1 min-w-0\">
-                        <div class=\"flex justify-between items-baseline\">
-                            <h3 class=\"font-bold truncate text-sm text-gray-800\">${ch.name}${ch.isVerified ? '<span class=\"verified-badge\"><svg fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M5 13l4 4L19 7\"></path></svg></span>' : ''}</h3>
-                            <span class=\"text-[10px] text-gray-400 font-medium\">${timeStr}</span>
+                    <div class="avatar shadow-sm" style="background-image: ${avBg}; background-color: ${avCol}">${avInitial}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-baseline">
+                            <h3 class="font-bold truncate text-sm text-gray-800">${ch.name}${ch.isVerified ? '<span class="verified-badge"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg></span>' : ''}</h3>
+                            <span class="text-[10px] text-gray-400 font-medium">${timeStr}</span>
                         </div>
-                        <p class=\"text-xs text-gray-500 truncate mt-0.5\">${ch.last_msg || 'Нет сообщений'}</p>
+                        <p class="text-xs text-gray-500 truncate mt-0.5">${ch.last_msg || 'Нет сообщений'}</p>
                     </div>
-                    ${isUnread ? '<div class=\"unread-badge\"></div>' : ''}
+                    ${isUnread ? '<div class="unread-badge"></div>' : ''}
                 `;
                 container.appendChild(el);
             });
@@ -485,11 +483,11 @@
             document.getElementById('activeChannelContent').classList.remove('hidden');
             
             const area = document.getElementById('messagesArea');
-            area.innerHTML = '<div class=\"flex justify-center p-10\"><div class=\"w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin\"></div></div>';
+            area.innerHTML = '<div class="flex justify-center p-10"><div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>';
 
             const chatInfo = isPrivate ? { name: id, link: id, photoURL: allUsers.find(u => u.id === id)?.photoURL } : channelsData.find(c => c.id === id);
             
-            document.getElementById('headerTitle').innerHTML = `${chatInfo.name}${chatInfo.isVerified ? '<span class=\"verified-badge\"><svg fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M5 13l4 4L19 7\"></path></svg></span>' : ''}`;
+            document.getElementById('headerTitle').innerHTML = `${chatInfo.name}${chatInfo.isVerified ? '<span class="verified-badge"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg></span>' : ''}`;
             document.getElementById('headerMeta').innerText = isPrivate ? 'Личный чат' : (chatInfo.subscribers?.length || 0) + ' участников';
             
             const hAv = document.getElementById('headerAvatar');
@@ -502,11 +500,11 @@
                 hAv.style.backgroundColor = getHashColor(chatInfo.name);
             }
 
-            if (!isPrivate) await updateDoc(doc(db, ROOT, \"channels\", \"list\", id), { viewedBy: arrayUnion(user) });
+            if (!isPrivate) await updateDoc(doc(db, ROOT, "channels", "list", id), { viewedBy: arrayUnion(user) });
 
             const colPath = isPrivate ? 
-                query(collection(db, ROOT, \"privates\"), where(\"pair\", \"array-contains\", user), orderBy(\"time\")) :
-                query(collection(db, ROOT, \"channels\", \"list\", id, \"messages\"), orderBy(\"time\"));
+                query(collection(db, ROOT, "privates"), where("pair", "array-contains", user), orderBy("time")) :
+                query(collection(db, ROOT, "channels", "list", id, "messages"), orderBy("time"));
 
             messagesSub = onSnapshot(colPath, (snap) => {
                 const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(m => !isPrivate || m.pair.includes(id));
@@ -525,7 +523,7 @@
                 if (dateStr !== lastDate) {
                     const dEl = document.createElement('div');
                     dEl.className = 'text-center my-4';
-                    dEl.innerHTML = `<span class=\"bg-gray-200 text-gray-500 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider\">${dateStr === new Date().toLocaleDateString() ? 'Сегодня' : dateStr}</span>`;
+                    dEl.innerHTML = `<span class="bg-gray-200 text-gray-500 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">${dateStr === new Date().toLocaleDateString() ? 'Сегодня' : dateStr}</span>`;
                     area.appendChild(dEl);
                     lastDate = dateStr;
                 }
@@ -537,31 +535,31 @@
                 
                 let content = '';
                 if (m.replyTo) {
-                    content += `<div class=\"reply-quote\" onclick=\"scrollToMessage('${m.replyTo.id}')\">
-                        <div class=\"font-bold text-[10px] mb-1\">${m.replyTo.from}</div>
-                        <div class=\"truncate text-[11px] opacity-80\">${m.replyTo.text || 'Фотография'}</div>
+                    content += `<div class="reply-quote" onclick="scrollToMessage('${m.replyTo.id}')">
+                        <div class="font-bold text-[10px] mb-1">${m.replyTo.from}</div>
+                        <div class="truncate text-[11px] opacity-80">${m.replyTo.text || 'Фотография'}</div>
                     </div>`;
                 }
 
                 if (m.type === 'image') {
-                    content += `<img src=\"${m.url}\" class=\"msg-image\" onclick=\"viewMedia('${m.url}', '${m.id}')\">`;
+                    content += `<img src="${m.url}" class="msg-image" onclick="viewMedia('${m.url}', '${m.id}')">`;
                 }
                 
                 if (m.text) {
-                    content += `<div class=\"msg-text\">${m.text.replace(/\\n/g, '<br>')}</div>`;
+                    content += `<div class="msg-text">${m.text.replace(/\n/g, '<br>')}</div>`;
                 }
 
                 const metaClass = m.type === 'image' && !m.text ? 'msg-meta-overlay' : 'flex justify-end items-center gap-1 mt-1 opacity-60 text-[10px]';
-                content += `<div class=\"${metaClass}\">
-                    ${!isMine && m.views ? `<span class=\"views-badge\"><svg class=\"w-3 h-3\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M15 12a3 3 0 11-6 0 3 3 0 016 0z\"/><path d=\"M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z\"/></svg>${m.views}</span>` : ''}
+                content += `<div class="${metaClass}">
+                    ${!isMine && m.views ? `<span class="views-badge"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>${m.views}</span>` : ''}
                     <span>${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    ${isMine ? (m.time ? '<svg class=\"w-3 h-3 text-blue-200\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M5 13l4 4L19 7\"></path></svg>' : '<svg class=\"w-3 h-3 animate-spin\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15\"></path></svg>') : ''}
+                    ${isMine ? (m.time ? '<svg class="w-3 h-3 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg>' : '<svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>') : ''}
                 </div>`;
 
                 if (m.reactions) {
-                    let rHtml = '<div class=\"message-reactions\">';
+                    let rHtml = '<div class="message-reactions">';
                     for (const [emoji, users] of Object.entries(m.reactions)) {
-                        if (users.length > 0) rHtml += `<div class=\"reaction-badge\" onclick=\"toggleReaction('${m.id}', '${emoji}')\">${emoji} <span>${users.length}</span></div>`;
+                        if (users.length > 0) rHtml += `<div class="reaction-badge" onclick="toggleReaction('${m.id}', '${emoji}')">${emoji} <span>${users.length}</span></div>`;
                     }
                     rHtml += '</div>';
                     content += rHtml;
@@ -579,12 +577,7 @@
             if ((!text && !replyTo) || !currentChannel) return;
 
             const isPrivate = allUsers.some(u => u.id === currentChannel);
-            const msgData = {
-                from: user,
-                text,
-                time: serverTimestamp(),
-                views: 0
-            };
+            const msgData = { from: user, text, time: serverTimestamp(), views: 0 };
 
             if (replyTo) {
                 msgData.replyTo = { id: replyTo.id, from: replyTo.from, text: replyTo.text };
@@ -595,37 +588,37 @@
             try {
                 if (isPrivate) {
                     msgData.pair = [user, currentChannel];
-                    await addDoc(collection(db, ROOT, \"privates\"), msgData);
+                    await addDoc(collection(db, ROOT, "privates"), msgData);
                 } else {
-                    await addDoc(collection(db, ROOT, \"channels\", \"list\", currentChannel, \"messages\"), msgData);
-                    await updateDoc(doc(db, ROOT, \"channels\", \"list\", currentChannel), {
-                        last_msg: text || \"Фотография\",
+                    await addDoc(collection(db, ROOT, "channels", "list", currentChannel, "messages"), msgData);
+                    await updateDoc(doc(db, ROOT, "channels", "list", currentChannel), {
+                        last_msg: text || "Фотография",
                         last_msg_time: serverTimestamp(),
                         viewedBy: [user]
                     });
                 }
-            } catch (e) { showToast(\"Ошибка отправки\"); }
+            } catch (e) { showToast("Ошибка отправки"); }
         };
 
         window.handleImageUpload = async (input) => {
             const file = input.files[0];
             if (!file || !currentChannel) return;
-            if (file.size > 2 * 1024 * 1024) return showToast(\"Файл слишком большой (макс 2МБ)\");
+            if (file.size > 2 * 1024 * 1024) return showToast("Файл слишком большой (макс 2МБ)");
 
-            showToast(\"Загрузка...\");
+            showToast("Загрузка...");
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const url = e.target.result;
                 const isPrivate = allUsers.some(u => u.id === currentChannel);
-                const msgData = { from: user, type: 'image', url, text: \"\", time: serverTimestamp(), views: 0 };
+                const msgData = { from: user, type: 'image', url, text: "", time: serverTimestamp(), views: 0 };
                 
                 if (isPrivate) {
                     msgData.pair = [user, currentChannel];
-                    await addDoc(collection(db, ROOT, \"privates\"), msgData);
+                    await addDoc(collection(db, ROOT, "privates"), msgData);
                 } else {
-                    await addDoc(collection(db, ROOT, \"channels\", \"list\", currentChannel, \"messages\"), msgData);
-                    await updateDoc(doc(db, ROOT, \"channels\", \"list\", currentChannel), {
-                        last_msg: \"Фотография\",
+                    await addDoc(collection(db, ROOT, "channels", "list", currentChannel, "messages"), msgData);
+                    await updateDoc(doc(db, ROOT, "channels", "list", currentChannel), {
+                        last_msg: "Фотография",
                         last_msg_time: serverTimestamp(),
                         viewedBy: [user]
                     });
@@ -640,20 +633,20 @@
             const emojis = ['👍', '❤️', '🔥', '😂', '😮', '😢'];
             
             menu.innerHTML = `
-                <div class=\"reactions-row\">
-                    ${emojis.map(emo => `<span class=\"emoji-item\" onclick=\"toggleReaction('${msg.id}', '${emo}')\">${emo}</span>`).join('')}
+                <div class="reactions-row">
+                    ${emojis.map(emo => `<span class="emoji-item" onclick="toggleReaction('${msg.id}', '${emo}')">${emo}</span>`).join('')}
                 </div>
-                <div class=\"context-menu-item\" onclick=\"setReply('${msg.id}')\">
-                    <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6\" stroke-width=\"2\"/></svg>
+                <div class="context-menu-item" onclick="setReply('${msg.id}')">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" stroke-width="2"/></svg>
                     Ответить
                 </div>
-                <div class=\"context-menu-item\" onclick=\"copyText('${msg.text}')\">
-                    <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\" stroke-width=\"2\"/></svg>
+                <div class="context-menu-item" onclick="copyText('${msg.text}')">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-width="2"/></svg>
                     Копировать
                 </div>
                 ${msg.from === user ? `
-                <div class=\"context-menu-item danger\" onclick=\"deleteMessage('${msg.id}')\">
-                    <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16\" stroke-width=\"2\"/></svg>
+                <div class="context-menu-item danger" onclick="deleteMessage('${msg.id}')">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
                     Удалить
                 </div>` : ''}
             `;
@@ -668,7 +661,7 @@
 
         window.toggleReaction = async (msgId, emoji) => {
             const isPrivate = allUsers.some(u => u.id === currentChannel);
-            const ref = isPrivate ? doc(db, ROOT, \"privates\", msgId) : doc(db, ROOT, \"channels\", \"list\", currentChannel, \"messages\", msgId);
+            const ref = isPrivate ? doc(db, ROOT, "privates", msgId) : doc(db, ROOT, "channels", "list", currentChannel, "messages", msgId);
             const snap = await getDoc(ref);
             if (!snap.exists()) return;
 
@@ -683,7 +676,7 @@
 
         window.setReply = async (msgId) => {
             const isPrivate = allUsers.some(u => u.id === currentChannel);
-            const ref = isPrivate ? doc(db, ROOT, \"privates\", msgId) : doc(db, ROOT, \"channels\", \"list\", currentChannel, \"messages\", msgId);
+            const ref = isPrivate ? doc(db, ROOT, "privates", msgId) : doc(db, ROOT, "channels", "list", currentChannel, "messages", msgId);
             const snap = await getDoc(ref);
             replyTo = { id: msgId, ...snap.data() };
             
@@ -700,8 +693,8 @@
 
         window.deleteMessage = async (msgId) => {
             const isPrivate = allUsers.some(u => u.id === currentChannel);
-            const ref = isPrivate ? doc(db, ROOT, \"privates\", msgId) : doc(db, ROOT, \"channels\", \"list\", currentChannel, \"messages\", msgId);
-            await updateDoc(ref, { text: \"Сообщение удалено\", type: \"deleted\", url: null });
+            const ref = isPrivate ? doc(db, ROOT, "privates", msgId) : doc(db, ROOT, "channels", "list", currentChannel, "messages", msgId);
+            await updateDoc(ref, { text: "Сообщение удалено", type: "deleted", url: null });
         };
 
         window.viewMedia = (url, id) => {
@@ -712,7 +705,7 @@
             document.getElementById('imgDl').href = url;
             document.getElementById('mediaReply').onclick = () => { closeMedia(); setReply(id); };
             
-            let scale = 1, lastX = 0, lastY = 0, isDragging = false, startX, startY;
+            let scale = 1, lastX = 0, lastY = 0;
             img.style.transform = `scale(1) translate(0,0)`;
 
             v.onwheel = (e) => {
@@ -768,9 +761,9 @@
             if (newPass) updates.pass = newPass;
             if (userData.tempPhoto) updates.photoURL = userData.tempPhoto;
 
-            await updateDoc(doc(db, ROOT, \"users\", \"list\", user), updates);
+            await updateDoc(doc(db, ROOT, "users", "list", user), updates);
             userData = { ...userData, ...updates };
-            showToast(\"Профиль обновлен\");
+            showToast("Профиль обновлен");
             updateSidebarHeader();
             document.getElementById('settingsModal').style.display = 'none';
         };
@@ -806,9 +799,9 @@
                     const div = document.createElement('div');
                     div.className = 'flex items-center justify-between p-2 hover:bg-gray-50 rounded-xl';
                     div.innerHTML = `
-                        <div class=\"flex items-center gap-2\">
-                            <div class=\"w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold\" ${uInfo?.photoURL ? `style=\"background-image:url(${uInfo.photoURL});background-size:cover\"` : ''}>${uInfo?.photoURL ? '' : s[0].toUpperCase()}</div>
-                            <span class=\"text-xs font-medium\">${s}</span>
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold" ${uInfo?.photoURL ? `style="background-image:url(${uInfo.photoURL});background-size:cover"` : ''}>${uInfo?.photoURL ? '' : s[0].toUpperCase()}</div>
+                            <span class="text-xs font-medium">${s}</span>
                         </div>
                     `;
                     list.appendChild(div);
@@ -821,11 +814,11 @@
         window.saveNewChannel = async () => {
             const name = document.getElementById('createNameInput').value.trim();
             const link = document.getElementById('createIdInput').value.trim();
-            if (!name || !ID_REGEX.test(link)) return showToast(\"Некорректные данные\");
-            const snap = await getDocs(query(collection(db, ROOT, \"channels\", \"list\"), where(\"link\", \"==\", link)));
-            if (!snap.empty) return showToast(\"ID занят\");
-            const ref = await addDoc(collection(db, ROOT, \"channels\", \"list\"), { name, link, owner: user, subscribers: [user], last_msg_time: serverTimestamp(), viewedBy: [user], isVerified: false });
-            await updateDoc(doc(db, ROOT, \"users\", \"list\", user), { subs: arrayUnion(ref.id) });
+            if (!name || !ID_REGEX.test(link)) return showToast("Некорректные данные");
+            const snap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
+            if (!snap.empty) return showToast("ID занят");
+            const ref = await addDoc(collection(db, ROOT, "channels", "list"), { name, link, owner: user, subscribers: [user], last_msg_time: serverTimestamp(), viewedBy: [user], isVerified: false });
+            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(ref.id) });
             document.getElementById('createChannelModal').style.display = 'none';
             selectChannel(ref.id);
         };
