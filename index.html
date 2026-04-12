@@ -43,7 +43,6 @@
         .message-bubble.image-only .msg-image { margin: 0 !important; border-radius: 18px !important; display: block; }
         .message-bubble.image-only .msg-meta-overlay { position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.45); padding: 2px 8px; border-radius: 10px; color: white !important; backdrop-filter: blur(4px); display: flex; align-items: center; gap: 6px; z-index: 5; }
 
-        /* Реакции под сообщением */
         .message-reactions { display: flex; flex-wrap: wrap; gap: 4px; position: absolute; bottom: -10px; left: 10px; z-index: 10; }
         .mine .message-reactions { left: auto; right: 10px; flex-direction: row-reverse; }
         .reaction-badge { background: white; padding: 2px 6px; border-radius: 10px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #f1f5f9; color: #333; cursor: pointer; display: flex; align-items: center; gap: 2px; }
@@ -85,7 +84,6 @@
         .reply-quote { background: rgba(0,0,0,0.05); border-left: 3px solid #3b82f6; padding: 4px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 13px; cursor: pointer; max-width: 100%; }
         .mine .reply-quote { background: rgba(255,255,255,0.15); border-left-color: white; color: white; }
 
-        /* Контекстное меню с рядом эмодзи */
         .context-menu { position: fixed; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 220px; z-index: 1000; overflow: hidden; transform: scale(0.8); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: center; }
         .context-menu.active { transform: scale(1); opacity: 1; pointer-events: auto; }
         
@@ -98,7 +96,6 @@
         .context-menu-item:active { background: #f1f5f9; }
         .context-menu-item.danger { color: #ef4444; }
 
-        /* Media Viewer Styles */
         #mediaViewer { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; backdrop-filter: blur(15px); overflow: hidden; touch-action: none; cursor: grab; }
         #mediaViewer:active { cursor: grabbing; }
         
@@ -139,7 +136,7 @@
         </div>
     </div>
 
-    <aside class="sidebar" id="appSidebar" style="display:none;">
+    <aside class="sidebar hidden-mobile" id="appSidebar">
         <div class="p-4 flex items-center justify-between">
             <h2 class="text-xl font-bold">Чаты</h2>
             <div class="flex gap-2">
@@ -157,7 +154,7 @@
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                     <p>Клиент на Android устройства:</p>
                 </div>
-                <a href="#" target="_blank" class="block w-full text-center bg-blue-600 text-white py-2 rounded-lg font-bold text-xs hover:bg-blue-700 transition-colors">Скачать клиент</a>
+                <a href="https://elytrwcloud.rwkit.ru/files/burkinachat.apk" target="_blank" class="block w-full text-center bg-blue-600 text-white py-2 rounded-lg font-bold text-xs hover:bg-blue-700 transition-colors">Скачать клиент</a>
             </div>
         </div>
 
@@ -173,7 +170,7 @@
         </div>
     </aside>
 
-    <main class="main-content" id="chatView" style="display:none;">
+    <main class="main-content" id="chatView">
         <div id="noChannelView" class="flex-1 flex flex-col items-center justify-center text-gray-400 px-6 text-center animate-pulse">
             <div class="bg-white p-6 rounded-full mb-4 shadow-sm">
                 <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
@@ -223,8 +220,7 @@
         </div>
     </main>
 
-    <div id="msgContextMenu" class="context-menu">
-        </div>
+    <div id="msgContextMenu" class="context-menu"></div>
 
     <div id="mediaViewer">
         <div class="media-actions">
@@ -235,7 +231,6 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2.5"/></svg>
             </button>
         </div>
-
         <div id="mediaOptions" class="media-menu">
             <div class="media-menu-item" id="mediaReply">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" stroke-width="2"/></svg>
@@ -246,7 +241,6 @@
                 Скачать
             </a>
         </div>
-
         <img id="fullImg" class="object-contain" src="">
     </div>
 
@@ -298,14 +292,12 @@
                 <div id="profAvatar" class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl text-white font-bold bg-cover bg-center">?</div>
                 <h2 id="profName" class="text-xl font-bold text-center flex items-center justify-center">Имя</h2>
                 <p id="profId" class="text-blue-500 mb-6 text-center">@id</p>
-                
                 <div id="ownerEditSection" class="hidden space-y-4 mb-6 border-t pt-4">
                     <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Настройки канала</h4>
                     <input type="text" id="editNameInput" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-blue-400 text-sm" placeholder="Название">
                     <input type="text" id="editIdInput" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-blue-400 text-sm" placeholder="ID канала">
                     <button onclick="updateChannelData()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold btn-animate text-sm">Сохранить изменения</button>
                 </div>
-
                 <div id="subscribersSection" class="hidden border-t pt-4">
                     <div class="flex items-center justify-between mb-3">
                         <h4 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Участники</h4>
@@ -313,7 +305,6 @@
                     </div>
                     <div id="subsListArea" class="space-y-2"></div>
                 </div>
-
                 <div id="profMeta" class="text-left border-t pt-4 space-y-2"></div>
             </div>
             <button onclick="document.getElementById('profileModal').style.display='none'" class="mt-6 w-full py-3 bg-gray-100 text-gray-600 rounded-xl font-bold btn-animate">Закрыть</button>
@@ -325,7 +316,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, serverTimestamp, arrayUnion, arrayRemove, query, where, getDocs, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBAFGyrgliehm-cfJG91QkQRvUGACPP8rA",
@@ -339,325 +330,367 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        
-        const ROOT = "pnavkv2_v9"; 
-        const APP_VERSION = "9.0";
-
+        const ROOT = "pnavkv2_v9";
         const ID_REGEX = /^[a-z_][a-z0-9_]{3,11}$/;
-        const VERIFIED_HTML = `<span class="verified-badge" title="Подтвержденный аккаунт"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>`;
-        const EMOJI_LIST = ['👍', '❤️', '😂', '🔥', '😭', '😍', '👌'];
 
         let user = null;
-        let channels = [];
-        let allUsers = [];
-        let mySubs = [];
-        let activeChat = null;
+        let userData = null;
         let authMode = 'register';
-        let directChatsWithActivity = [];
-        let lastMessageTimestamps = {};
-        let unreadStates = {};
+        let currentChannel = null;
+        let allUsers = [];
+        let channelsData = [];
+        let messagesSub = null;
         let lastRenderedChatIds = "";
-        let newAvatarBase64 = null;
         let replyTo = null;
-        let editingMsgId = null;
-        let currentMessagesCount = 0; // Для отслеживания изменений в списке сообщений
 
-        const initAuth = async () => {
-            const currentVersion = localStorage.getItem('pnavkv2_app_version');
-            if (currentVersion !== APP_VERSION) {
-                localStorage.clear();
-                localStorage.setItem('pnavkv2_app_version', APP_VERSION);
-                location.reload();
-                return;
+        onAuthStateChanged(auth, async (u) => {
+            const saved = localStorage.getItem('pnavkv2_user');
+            if (u && saved) {
+                user = saved;
+                const snap = await getDoc(doc(db, ROOT, \"users\", \"list\", user));
+                if (snap.exists()) {
+                    userData = snap.data();
+                    startApp();
+                } else logout();
+            } else {
+                document.getElementById('authScreen').style.display = 'flex';
             }
-            await signInAnonymously(auth);
-        };
-        initAuth();
-
-        onAuthStateChanged(auth, (fbUser) => {
-            const savedUser = localStorage.getItem('pnavkv2_user');
-            if (savedUser) loginAs(savedUser);
         });
 
         window.toggleAuthMode = () => {
             authMode = authMode === 'register' ? 'login' : 'register';
-            const elements = {
-                title: document.getElementById('authTitle'),
-                btn: document.getElementById('authBtnText'),
-                subtitle: document.getElementById('authSubtitle'),
-                toggle: document.getElementById('toggleAuthBtn')
-            };
-            if (authMode === 'login') {
-                elements.title.textContent = 'Вход';
-                elements.btn.textContent = 'Войти';
-                elements.subtitle.textContent = 'Введите свои данные';
-                elements.toggle.textContent = 'Нету аккаунта? Зарегистрироваться';
-            } else {
-                elements.title.textContent = 'Регистрация';
-                elements.btn.textContent = 'Зарегистрироваться';
-                elements.subtitle.textContent = 'Зарегистрируйтесь или войдите';
-                elements.toggle.textContent = 'Уже есть аккаунт? Войти';
-            }
+            document.getElementById('authTitle').innerText = authMode === 'register' ? 'Регистрация' : 'Вход';
+            document.getElementById('authSubtitle').innerText = authMode === 'register' ? 'Зарегистрируйтесь или войдите' : 'Введите свои данные';
+            document.getElementById('authBtnText').innerText = authMode === 'register' ? 'Зарегистрироваться' : 'Войти';
+            document.getElementById('toggleAuthBtn').innerText = authMode === 'register' ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Создать';
         };
 
         window.handleAuth = async () => {
-            const nameInput = document.getElementById('authUsername').value.trim().toLowerCase().replace('@', '');
-            const pass = document.getElementById('authPassword').value;
-            if (!ID_REGEX.test(nameInput)) return showToast("Некорректный никнейм (4-12 симв., латиница)");
-            if (pass.length < 4) return showToast("Короткий пароль");
+            const name = document.getElementById('authUsername').value.trim();
+            const pass = document.getElementById('authPassword').value.trim();
+            if (!ID_REGEX.test(name)) return showToast(\"Никнейм от 4 до 12 символов\");
+            if (pass.length < 4) return showToast(\"Пароль слишком короткий\");
 
-            const uRef = doc(db, ROOT, "users", "list", nameInput);
-            const snap = await getDoc(uRef);
+            try {
+                await signInAnonymously(auth);
+                const userRef = doc(db, ROOT, \"users\", \"list\", name);
+                const snap = await getDoc(userRef);
 
-            if (authMode === 'register') {
-                if (snap.exists()) return showToast("Ник занят");
-                let localAccounts = JSON.parse(localStorage.getItem('pnavkv2_created_accounts') || "[]");
-                if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) return showToast("Лимит: 2 аккаунта на устройство");
-                
-                await setDoc(uRef, { pass, subs: [], joined: serverTimestamp(), displayName: nameInput });
-                if (!localAccounts.includes(nameInput)) {
-                    localAccounts.push(nameInput);
-                    localStorage.setItem('pnavkv2_created_accounts', JSON.stringify(localAccounts));
+                if (authMode === 'register') {
+                    if (snap.exists()) return showToast(\"Никнейм занят\");
+                    userData = { name, pass, subs: [], joined: serverTimestamp(), photoURL: \"\" };
+                    await setDoc(userRef, userData);
+                } else {
+                    if (!snap.exists() || snap.data().pass !== pass) return showToast(\"Ошибка входа\");
+                    userData = snap.data();
                 }
-                loginAs(nameInput);
-            } else {
-                if (!snap.exists() || snap.data().pass !== pass) return showToast("Неверные данные");
-                loginAs(nameInput);
-            }
+                user = name;
+                localStorage.setItem('pnavkv2_user', user);
+                startApp();
+            } catch (e) { showToast(\"Ошибка сервера\"); }
         };
 
-        const loginAs = (name) => {
-            user = name;
-            localStorage.setItem('pnavkv2_user', name);
+        function startApp() {
             document.getElementById('authScreen').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('authScreen').style.display = 'none';
                 document.getElementById('appSidebar').style.display = 'flex';
                 document.getElementById('chatView').style.display = 'flex';
-                startApp();
+                updateSidebarHeader();
+                initSync();
             }, 500);
-        };
+        }
 
-        const startApp = () => {
-            onSnapshot(doc(db, ROOT, "users", "list", user), (snap) => {
-                if (!snap.exists()) return;
-                const data = snap.data();
-                mySubs = data.subs || [];
-                document.getElementById('myUsername').textContent = '@' + user;
-                const av = document.getElementById('mySidebarAvatar');
-                if (data.avatar) {
-                    av.style.backgroundImage = `url(${data.avatar})`;
-                    av.textContent = "";
-                } else {
-                    av.style.backgroundImage = 'none';
-                    av.textContent = user[0].toUpperCase();
-                }
-                renderChatList();
-            });
+        function updateSidebarHeader() {
+            document.getElementById('myUsername').innerText = '@' + user;
+            const av = document.getElementById('mySidebarAvatar');
+            if (userData.photoURL) {
+                av.style.backgroundImage = `url(${userData.photoURL})`;
+                av.innerText = '';
+            } else {
+                av.style.backgroundImage = 'none';
+                av.innerText = user[0].toUpperCase();
+                av.style.backgroundColor = getHashColor(user);
+            }
+        }
 
-            onSnapshot(collection(db, ROOT, "channels", "list"), (snap) => {
-                channels = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                renderChatList();
-            });
-
-            onSnapshot(collection(db, ROOT, "users", "list"), (snap) => {
+        function initSync() {
+            onSnapshot(collection(db, ROOT, \"users\", \"list\"), (snap) => {
                 allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderChatList();
             });
-        };
+            onSnapshot(query(collection(db, ROOT, \"channels\", \"list\")), (snap) => {
+                channelsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderChatList();
+            });
+        }
 
-        const renderChatList = () => {
-            const area = document.getElementById('chatListArea');
-            const search = document.getElementById('searchInput').value.trim().toLowerCase();
+        window.renderChatList = () => {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('chatListArea');
             
             let items = [];
-            
             if (search) {
-                const filteredUsers = allUsers.filter(u => u.id !== user && (u.id.includes(search) || (u.displayName && u.displayName.toLowerCase().includes(search))));
-                items = filteredUsers.map(u => ({ type: 'user', id: u.id, name: u.displayName || u.id, avatar: u.avatar, isVerified: u.isVerified }));
-                
-                const filteredChannels = channels.filter(c => c.name.toLowerCase().includes(search) || c.link.toLowerCase().includes(search));
-                items = [...items, ...filteredChannels.map(c => ({ type: 'channel', id: c.id, name: c.name, avatar: c.avatar, isVerified: c.isVerified }))];
+                items = allUsers.filter(u => u.id !== user && u.id.toLowerCase().includes(search))
+                    .map(u => ({ id: u.id, name: u.id, type: 'user', photoURL: u.photoURL, last_msg: \"Личное сообщение\", last_msg_time: null }));
             } else {
-                const subbedChannels = channels.filter(c => mySubs.includes(c.id));
-                items = subbedChannels.map(c => ({ 
-                    type: 'channel', 
-                    id: c.id, 
-                    name: c.name, 
-                    avatar: c.avatar, 
-                    last_msg: c.last_msg, 
-                    last_msg_time: c.last_msg_time,
-                    isVerified: c.isVerified
-                }));
+                items = channelsData.filter(c => userData.subs && userData.subs.includes(c.id))
+                    .sort((a, b) => (b.last_msg_time?.toMillis() || 0) - (a.last_msg_time?.toMillis() || 0));
             }
 
-            items.sort((a, b) => {
-                const timeA = a.last_msg_time?.toDate ? a.last_msg_time.toDate().getTime() : 0;
-                const timeB = b.last_msg_time?.toDate ? b.last_msg_time.toDate().getTime() : 0;
-                return timeB - timeA;
-            });
-
-            const currentIds = items.map(i => i.id).join('|');
+            const currentIds = items.map(i => i.id + (i.last_msg_time?.toMillis() || 0)).join('|');
             if (currentIds === lastRenderedChatIds) return;
             lastRenderedChatIds = currentIds;
 
-            area.innerHTML = '';
-            items.forEach(item => {
-                const div = document.createElement('div');
-                div.className = `chat-item ${activeChat === item.id ? 'active' : ''}`;
-                div.onclick = () => selectChannel(item.id, item.type === 'user');
-                
-                const isVerified = item.isVerified ? VERIFIED_HTML : '';
-                const timeStr = formatTime(item.last_msg_time);
-                
-                // Исправленная отрисовка аватарки
-                const avatarStyle = item.avatar ? `background-image: url(${item.avatar}); background-color: transparent;` : `background-color: ${getHashColor(item.id)}`;
-                const avatarContent = item.avatar ? '' : item.name[0].toUpperCase();
+            container.innerHTML = '';
+            items.forEach(ch => {
+                const isUnread = ch.last_msg_time && (!ch.viewedBy || !ch.viewedBy.includes(user));
+                const el = document.createElement('div');
+                el.className = `chat-item ${currentChannel === ch.id ? 'active' : ''}`;
+                el.onclick = () => selectChannel(ch.id, ch.type === 'user');
 
-                div.innerHTML = `
-                    <div class="avatar" style="${avatarStyle}">${avatarContent}</div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-center mb-0.5">
-                            <span class="font-bold text-sm truncate flex items-center">${item.name}${isVerified}</span>
-                            <span class="text-[10px] text-gray-400 font-medium">${timeStr}</span>
+                // --- ФИКС АВАТАРКИ ---
+                const avatarBg = ch.photoURL ? `url(${ch.photoURL})` : 'none';
+                const avatarColor = ch.photoURL ? 'transparent' : getHashColor(ch.name);
+                const initial = ch.photoURL ? '' : ch.name[0].toUpperCase();
+
+                // --- ФИКС ВРЕМЕНИ ---
+                let timeStr = '';
+                if (ch.last_msg_time) {
+                    const date = ch.last_msg_time.toDate ? ch.last_msg_time.toDate() : new Date(ch.last_msg_time);
+                    timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+
+                el.innerHTML = `
+                    <div class=\"avatar shadow-sm\" style=\"background-image: ${avatarBg}; background-color: ${avatarColor}\">${initial}</div>
+                    <div class=\"flex-1 min-w-0\">
+                        <div class=\"flex justify-between items-baseline\">
+                            <h3 class=\"font-bold truncate text-sm text-gray-800\">${ch.name}${ch.isVerified ? '<span class=\"verified-badge\"><svg fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M5 13l4 4L19 7\"></path></svg></span>' : ''}</h3>
+                            <span class=\"text-[10px] text-gray-400 font-medium\">${timeStr}</span>
                         </div>
-                        <p class="text-xs text-gray-400 truncate">${item.last_msg || (item.type === 'user' ? 'Личное сообщение' : 'Нет сообщений')}</p>
+                        <p class=\"text-xs text-gray-500 truncate mt-0.5\">${ch.last_msg || 'Нет сообщений'}</p>
                     </div>
+                    ${isUnread ? '<div class=\"unread-badge\"></div>' : ''}
                 `;
-                area.appendChild(div);
+                container.appendChild(el);
             });
         };
 
-        const formatTime = (ts) => {
-            if (!ts) return "";
-            // Обработка объекта Timestamp Firebase
-            const date = ts.toDate ? ts.toDate() : new Date(ts);
-            if (isNaN(date.getTime())) return "";
-
-            const now = new Date();
-            const diff = now - date;
-            
-            if (diff < 60000) return "сейчас";
-            if (diff < 3600000) return Math.floor(diff / 60000) + "м";
-            
-            if (date.toDateString() === now.toDateString()) {
-                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            }
-            return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
-        };
-
-        const getHashColor = (s) => {
-            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
-            let hash = 0;
-            for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
-            return colors[Math.abs(hash) % colors.length];
-        };
-
-        window.selectChannel = async (id, isDirect = false) => {
-            activeChat = id;
-            document.getElementById('noChannelView').style.display = 'none';
-            document.getElementById('activeChannelContent').classList.remove('hidden');
-            if (window.innerWidth <= 768) document.getElementById('appSidebar').classList.add('hidden-mobile');
-
-            let chatData = isDirect ? allUsers.find(u => u.id === id) : channels.find(c => c.id === id);
-            if (!chatData && isDirect) {
-                 const snap = await getDoc(doc(db, ROOT, "users", "list", id));
-                 chatData = { id: snap.id, ...snap.data() };
-            }
-
-            const title = document.getElementById('headerTitle');
-            const meta = document.getElementById('headerMeta');
-            const av = document.getElementById('headerAvatar');
-
-            title.innerHTML = (chatData.name || chatData.displayName || chatData.id) + (chatData.isVerified ? VERIFIED_HTML : '');
-            meta.textContent = isDirect ? 'Личный чат' : `@${chatData.link}`;
-            
-            if (chatData.avatar) {
-                av.style.backgroundImage = `url(${chatData.avatar})`;
-                av.textContent = "";
-            } else {
-                av.style.backgroundImage = 'none';
-                av.style.backgroundColor = getHashColor(id);
-                av.textContent = (chatData.name || chatData.displayName || chatData.id)[0].toUpperCase();
-            }
-
+        window.selectChannel = async (id, isPrivate = false) => {
+            if (messagesSub) messagesSub();
+            currentChannel = id;
             renderChatList();
-            loadMessages(id, isDirect);
-        };
+            document.getElementById('appSidebar').classList.add('hidden-mobile');
+            document.getElementById('noChannelView').classList.add('hidden');
+            document.getElementById('activeChannelContent').classList.remove('hidden');
+            
+            const area = document.getElementById('messagesArea');
+            area.innerHTML = '<div class=\"flex justify-center p-10\"><div class=\"w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin\"></div></div>';
 
-        let msgUnsub = null;
-        const loadMessages = (chatId, isDirect) => {
-            if (msgUnsub) msgUnsub();
-            const colPath = isDirect ? 
-                [user, chatId].sort().join('_') : 
-                chatId;
+            const chatInfo = isPrivate ? { name: id, link: id, photoURL: allUsers.find(u => u.id === id)?.photoURL } : channelsData.find(c => c.id === id);
+            
+            document.getElementById('headerTitle').innerHTML = `${chatInfo.name}${chatInfo.isVerified ? '<span class=\"verified-badge\"><svg fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M5 13l4 4L19 7\"></path></svg></span>' : ''}`;
+            document.getElementById('headerMeta').innerText = isPrivate ? 'Личный чат' : (chatInfo.subscribers?.length || 0) + ' участников';
+            
+            const hAv = document.getElementById('headerAvatar');
+            if (chatInfo.photoURL) {
+                hAv.style.backgroundImage = `url(${chatInfo.photoURL})`;
+                hAv.innerText = '';
+            } else {
+                hAv.style.backgroundImage = 'none';
+                hAv.innerText = chatInfo.name[0].toUpperCase();
+                hAv.style.backgroundColor = getHashColor(chatInfo.name);
+            }
 
-            msgUnsub = onSnapshot(collection(db, ROOT, "messages", colPath, "list"), (snap) => {
-                const area = document.getElementById('messagesArea');
-                const sorted = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.time?.toDate ? a.time.toDate() : 0) - (b.time?.toDate ? b.time.toDate() : 0));
-                
-                area.innerHTML = '';
-                sorted.forEach(m => {
-                    const isMine = m.sender === user;
-                    const div = document.createElement('div');
-                    div.className = `message-bubble ${isMine ? 'mine' : ''} ${m.type === 'image' ? 'image-only' : ''}`;
-                    
-                    let content = '';
-                    if (m.replyTo) {
-                        content += `<div class="reply-quote" onclick="scrollToMessage('${m.replyTo.id}')">
-                            <b class="block text-[10px]">${m.replyTo.user}</b>
-                            <span class="truncate block">${m.replyTo.text}</span>
-                        </div>`;
-                    }
+            if (!isPrivate) await updateDoc(doc(db, ROOT, \"channels\", \"list\", id), { viewedBy: arrayUnion(user) });
 
-                    if (m.type === 'image') {
-                        content += `<img src="${m.content}" class="msg-image" onclick="viewMedia('${m.content}', '${m.id}')">`;
-                        content += `<div class="msg-meta-overlay">
-                            <span class="text-[9px]">${formatTime(m.time)}</span>
-                        </div>`;
-                    } else {
-                        content += `<div>${m.content}</div>`;
-                        content += `<div class="text-[9px] mt-1 text-right opacity-60">${formatTime(m.time)}</div>`;
-                    }
+            const colPath = isPrivate ? 
+                query(collection(db, ROOT, \"privates\"), where(\"pair\", \"array-contains\", user), orderBy(\"time\")) :
+                query(collection(db, ROOT, \"channels\", \"list\", id, \"messages\"), orderBy(\"time\"));
 
-                    div.innerHTML = content;
-                    area.appendChild(div);
-                });
-                area.scrollTop = area.scrollHeight;
+            messagesSub = onSnapshot(colPath, (snap) => {
+                const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(m => !isPrivate || m.pair.includes(id));
+                renderMessages(msgs);
             });
         };
+
+        function renderMessages(msgs) {
+            const area = document.getElementById('messagesArea');
+            area.innerHTML = '';
+            let lastDate = '';
+
+            msgs.forEach(m => {
+                const dateObj = m.time?.toDate() || new Date();
+                const dateStr = dateObj.toLocaleDateString();
+                if (dateStr !== lastDate) {
+                    const dEl = document.createElement('div');
+                    dEl.className = 'text-center my-4';
+                    dEl.innerHTML = `<span class=\"bg-gray-200 text-gray-500 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider\">${dateStr === new Date().toLocaleDateString() ? 'Сегодня' : dateStr}</span>`;
+                    area.appendChild(dEl);
+                    lastDate = dateStr;
+                }
+
+                const isMine = m.from === user;
+                const el = document.createElement('div');
+                el.className = `message-bubble ${isMine ? 'mine' : ''} ${m.type === 'image' && !m.text ? 'image-only' : ''}`;
+                el.oncontextmenu = (e) => openContextMenu(e, m);
+                
+                let content = '';
+                if (m.replyTo) {
+                    content += `<div class=\"reply-quote\" onclick=\"scrollToMessage('${m.replyTo.id}')\">
+                        <div class=\"font-bold text-[10px] mb-1\">${m.replyTo.from}</div>
+                        <div class=\"truncate text-[11px] opacity-80\">${m.replyTo.text || 'Фотография'}</div>
+                    </div>`;
+                }
+
+                if (m.type === 'image') {
+                    content += `<img src=\"${m.url}\" class=\"msg-image\" onclick=\"viewMedia('${m.url}', '${m.id}')\">`;
+                }
+                
+                if (m.text) {
+                    content += `<div class=\"msg-text\">${m.text.replace(/\\n/g, '<br>')}</div>`;
+                }
+
+                const metaClass = m.type === 'image' && !m.text ? 'msg-meta-overlay' : 'flex justify-end items-center gap-1 mt-1 opacity-60 text-[10px]';
+                content += `<div class=\"${metaClass}\">
+                    ${!isMine && m.views ? `<span class=\"views-badge\"><svg class=\"w-3 h-3\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M15 12a3 3 0 11-6 0 3 3 0 016 0z\"/><path d=\"M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z\"/></svg>${m.views}</span>` : ''}
+                    <span>${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    ${isMine ? (m.time ? '<svg class=\"w-3 h-3 text-blue-200\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M5 13l4 4L19 7\"></path></svg>' : '<svg class=\"w-3 h-3 animate-spin\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15\"></path></svg>') : ''}
+                </div>`;
+
+                if (m.reactions) {
+                    let rHtml = '<div class=\"message-reactions\">';
+                    for (const [emoji, users] of Object.entries(m.reactions)) {
+                        if (users.length > 0) rHtml += `<div class=\"reaction-badge\" onclick=\"toggleReaction('${m.id}', '${emoji}')\">${emoji} <span>${users.length}</span></div>`;
+                    }
+                    rHtml += '</div>';
+                    content += rHtml;
+                }
+
+                el.innerHTML = content;
+                area.appendChild(el);
+            });
+            area.scrollTop = area.scrollHeight;
+        }
 
         window.sendMessage = async () => {
             const input = document.getElementById('msgInput');
             const text = input.value.trim();
-            if (!text && !replyTo) return;
+            if ((!text && !replyTo) || !currentChannel) return;
 
-            const isDirect = !channels.find(c => c.id === activeChat);
-            const colPath = isDirect ? [user, activeChat].sort().join('_') : activeChat;
-
+            const isPrivate = allUsers.some(u => u.id === currentChannel);
             const msgData = {
-                sender: user,
-                content: text,
+                from: user,
+                text,
                 time: serverTimestamp(),
-                type: 'text'
+                views: 0
             };
 
             if (replyTo) {
-                msgData.replyTo = replyTo;
+                msgData.replyTo = { id: replyTo.id, from: replyTo.from, text: replyTo.text };
                 cancelReply();
             }
 
-            await addDoc(collection(db, ROOT, "messages", colPath, "list"), msgData);
-            
-            // Обновляем последнее сообщение в канале/чате
-            if (!isDirect) {
-                await updateDoc(doc(db, ROOT, "channels", "list", activeChat), {
-                    last_msg: text.substring(0, 30),
-                    last_msg_time: serverTimestamp()
-                });
-            }
-
             input.value = '';
+            try {
+                if (isPrivate) {
+                    msgData.pair = [user, currentChannel];
+                    await addDoc(collection(db, ROOT, \"privates\"), msgData);
+                } else {
+                    await addDoc(collection(db, ROOT, \"channels\", \"list\", currentChannel, \"messages\"), msgData);
+                    await updateDoc(doc(db, ROOT, \"channels\", \"list\", currentChannel), {
+                        last_msg: text || \"Фотография\",
+                        last_msg_time: serverTimestamp(),
+                        viewedBy: [user]
+                    });
+                }
+            } catch (e) { showToast(\"Ошибка отправки\"); }
+        };
+
+        window.handleImageUpload = async (input) => {
+            const file = input.files[0];
+            if (!file || !currentChannel) return;
+            if (file.size > 2 * 1024 * 1024) return showToast(\"Файл слишком большой (макс 2МБ)\");
+
+            showToast(\"Загрузка...\");
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const url = e.target.result;
+                const isPrivate = allUsers.some(u => u.id === currentChannel);
+                const msgData = { from: user, type: 'image', url, text: \"\", time: serverTimestamp(), views: 0 };
+                
+                if (isPrivate) {
+                    msgData.pair = [user, currentChannel];
+                    await addDoc(collection(db, ROOT, \"privates\"), msgData);
+                } else {
+                    await addDoc(collection(db, ROOT, \"channels\", \"list\", currentChannel, \"messages\"), msgData);
+                    await updateDoc(doc(db, ROOT, \"channels\", \"list\", currentChannel), {
+                        last_msg: \"Фотография\",
+                        last_msg_time: serverTimestamp(),
+                        viewedBy: [user]
+                    });
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.openContextMenu = (e, msg) => {
+            e.preventDefault();
+            const menu = document.getElementById('msgContextMenu');
+            const emojis = ['👍', '❤️', '🔥', '😂', '😮', '😢'];
+            
+            menu.innerHTML = `
+                <div class=\"reactions-row\">
+                    ${emojis.map(emo => `<span class=\"emoji-item\" onclick=\"toggleReaction('${msg.id}', '${emo}')\">${emo}</span>`).join('')}
+                </div>
+                <div class=\"context-menu-item\" onclick=\"setReply('${msg.id}')\">
+                    <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6\" stroke-width=\"2\"/></svg>
+                    Ответить
+                </div>
+                <div class=\"context-menu-item\" onclick=\"copyText('${msg.text}')\">
+                    <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\" stroke-width=\"2\"/></svg>
+                    Копировать
+                </div>
+                ${msg.from === user ? `
+                <div class=\"context-menu-item danger\" onclick=\"deleteMessage('${msg.id}')\">
+                    <svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path d=\"M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16\" stroke-width=\"2\"/></svg>
+                    Удалить
+                </div>` : ''}
+            `;
+
+            menu.style.left = Math.min(e.pageX, window.innerWidth - 230) + 'px';
+            menu.style.top = Math.min(e.pageY, window.innerHeight - menu.offsetHeight - 20) + 'px';
+            menu.classList.add('active');
+
+            const close = () => { menu.classList.remove('active'); document.removeEventListener('click', close); };
+            setTimeout(() => document.addEventListener('click', close), 10);
+        };
+
+        window.toggleReaction = async (msgId, emoji) => {
+            const isPrivate = allUsers.some(u => u.id === currentChannel);
+            const ref = isPrivate ? doc(db, ROOT, \"privates\", msgId) : doc(db, ROOT, \"channels\", \"list\", currentChannel, \"messages\", msgId);
+            const snap = await getDoc(ref);
+            if (!snap.exists()) return;
+
+            const reactions = snap.data().reactions || {};
+            if (!reactions[emoji]) reactions[emoji] = [];
+            
+            if (reactions[emoji].includes(user)) reactions[emoji] = reactions[emoji].filter(u => u !== user);
+            else reactions[emoji].push(user);
+
+            await updateDoc(ref, { reactions });
+        };
+
+        window.setReply = async (msgId) => {
+            const isPrivate = allUsers.some(u => u.id === currentChannel);
+            const ref = isPrivate ? doc(db, ROOT, \"privates\", msgId) : doc(db, ROOT, \"channels\", \"list\", currentChannel, \"messages\", msgId);
+            const snap = await getDoc(ref);
+            replyTo = { id: msgId, ...snap.data() };
+            
+            document.getElementById('replyBar').style.display = 'flex';
+            document.getElementById('replyTargetUser').innerText = replyTo.from;
+            document.getElementById('replyTargetText').innerText = replyTo.text || 'Фотография';
+            document.getElementById('msgInput').focus();
         };
 
         window.cancelReply = () => {
@@ -665,19 +698,54 @@
             document.getElementById('replyBar').style.display = 'none';
         };
 
-        window.openSettings = async () => {
-            const snap = await getDoc(doc(db, ROOT, "users", "list", user));
-            const data = snap.data();
-            document.getElementById('setNewDisplayName').value = data.displayName || user;
-            const prev = document.getElementById('settingsAvatarPreview');
-            if (data.avatar) {
-                prev.style.backgroundImage = `url(${data.avatar})`;
-                prev.textContent = "";
-            } else {
-                prev.style.backgroundImage = "none";
-                prev.textContent = user[0].toUpperCase();
-            }
+        window.deleteMessage = async (msgId) => {
+            const isPrivate = allUsers.some(u => u.id === currentChannel);
+            const ref = isPrivate ? doc(db, ROOT, \"privates\", msgId) : doc(db, ROOT, \"channels\", \"list\", currentChannel, \"messages\", msgId);
+            await updateDoc(ref, { text: \"Сообщение удалено\", type: \"deleted\", url: null });
+        };
+
+        window.viewMedia = (url, id) => {
+            const v = document.getElementById('mediaViewer');
+            const img = document.getElementById('fullImg');
+            img.src = url;
+            v.style.display = 'flex';
+            document.getElementById('imgDl').href = url;
+            document.getElementById('mediaReply').onclick = () => { closeMedia(); setReply(id); };
+            
+            let scale = 1, lastX = 0, lastY = 0, isDragging = false, startX, startY;
+            img.style.transform = `scale(1) translate(0,0)`;
+
+            v.onwheel = (e) => {
+                e.preventDefault();
+                scale += e.deltaY * -0.001;
+                scale = Math.min(Math.max(1, scale), 4);
+                img.style.transform = `scale(${scale}) translate(${lastX}px, ${lastY}px)`;
+            };
+        };
+
+        window.closeMedia = () => {
+            document.getElementById('mediaViewer').style.display = 'none';
+            document.getElementById('mediaOptions').style.display = 'none';
+        };
+
+        document.getElementById('mediaMoreBtn').onclick = (e) => {
+            e.stopPropagation();
+            const m = document.getElementById('mediaOptions');
+            m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+        };
+
+        window.openSettings = () => {
             document.getElementById('settingsModal').style.display = 'flex';
+            document.getElementById('setNewDisplayName').value = userData.name;
+            const av = document.getElementById('settingsAvatarPreview');
+            if (userData.photoURL) {
+                av.style.backgroundImage = `url(${userData.photoURL})`;
+                av.innerText = '';
+            } else {
+                av.style.backgroundImage = 'none';
+                av.innerText = user[0].toUpperCase();
+                av.style.backgroundColor = getHashColor(user);
+            }
         };
 
         window.handleAvatarUpload = (input) => {
@@ -685,46 +753,79 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
-                newAvatarBase64 = e.target.result;
-                const prev = document.getElementById('settingsAvatarPreview');
-                prev.style.backgroundImage = `url(${newAvatarBase64})`;
-                prev.textContent = "";
+                const url = e.target.result;
+                document.getElementById('settingsAvatarPreview').style.backgroundImage = `url(${url})`;
+                document.getElementById('settingsAvatarPreview').innerText = '';
+                userData.tempPhoto = url;
             };
             reader.readAsDataURL(file);
         };
 
         window.saveProfileChanges = async () => {
             const newName = document.getElementById('setNewDisplayName').value.trim();
-            const newPass = document.getElementById('setNewPassword').value;
-            const update = { displayName: newName || user };
-            if (newPass) update.pass = newPass;
-            if (newAvatarBase64) update.avatar = newAvatarBase64;
+            const newPass = document.getElementById('setNewPassword').value.trim();
+            const updates = { name: newName };
+            if (newPass) updates.pass = newPass;
+            if (userData.tempPhoto) updates.photoURL = userData.tempPhoto;
 
-            await updateDoc(doc(db, ROOT, "users", "list", user), update);
-            showToast("Профиль обновлен");
+            await updateDoc(doc(db, ROOT, \"users\", \"list\", user), updates);
+            userData = { ...userData, ...updates };
+            showToast(\"Профиль обновлен\");
+            updateSidebarHeader();
             document.getElementById('settingsModal').style.display = 'none';
-            newAvatarBase64 = null;
+        };
+
+        window.openProfile = async () => {
+            const isPrivate = allUsers.some(u => u.id === currentChannel);
+            const data = isPrivate ? allUsers.find(u => u.id === currentChannel) : channelsData.find(c => c.id === currentChannel);
+            
+            document.getElementById('profileModal').style.display = 'flex';
+            document.getElementById('profName').innerText = data.name;
+            document.getElementById('profId').innerText = '@' + (data.link || data.id);
+            
+            const pAv = document.getElementById('profAvatar');
+            if (data.photoURL) {
+                pAv.style.backgroundImage = `url(${data.photoURL})`;
+                pAv.innerText = '';
+            } else {
+                pAv.style.backgroundImage = 'none';
+                pAv.innerText = data.name[0].toUpperCase();
+                pAv.style.backgroundColor = getHashColor(data.name);
+            }
+
+            const isOwner = data.owner === user;
+            document.getElementById('ownerEditSection').style.display = isOwner ? 'block' : 'none';
+            document.getElementById('subscribersSection').style.display = isPrivate ? 'none' : 'block';
+
+            if (!isPrivate) {
+                document.getElementById('subCountBadge').innerText = data.subscribers?.length || 0;
+                const list = document.getElementById('subsListArea');
+                list.innerHTML = '';
+                data.subscribers?.forEach(s => {
+                    const uInfo = allUsers.find(curr => curr.id === s);
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-2 hover:bg-gray-50 rounded-xl';
+                    div.innerHTML = `
+                        <div class=\"flex items-center gap-2\">
+                            <div class=\"w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold\" ${uInfo?.photoURL ? `style=\"background-image:url(${uInfo.photoURL});background-size:cover\"` : ''}>${uInfo?.photoURL ? '' : s[0].toUpperCase()}</div>
+                            <span class=\"text-xs font-medium\">${s}</span>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            }
         };
 
         window.openCreateModal = () => document.getElementById('createChannelModal').style.display = 'flex';
 
         window.saveNewChannel = async () => {
             const name = document.getElementById('createNameInput').value.trim();
-            const link = document.getElementById('createIdInput').value.trim().toLowerCase();
-            if (!name || !ID_REGEX.test(link)) return showToast("Некорректные данные");
-
-            const snap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
-            if (!snap.empty) return showToast("ID занят");
-
-            const ref = await addDoc(collection(db, ROOT, "channels", "list"), { 
-                name, 
-                link, 
-                owner: user, 
-                subscribers: [user], 
-                last_msg_time: serverTimestamp(),
-                last_msg: "Канал создан"
-            });
-            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(ref.id) });
+            const link = document.getElementById('createIdInput').value.trim();
+            if (!name || !ID_REGEX.test(link)) return showToast(\"Некорректные данные\");
+            const snap = await getDocs(query(collection(db, ROOT, \"channels\", \"list\"), where(\"link\", \"==\", link)));
+            if (!snap.empty) return showToast(\"ID занят\");
+            const ref = await addDoc(collection(db, ROOT, \"channels\", \"list\"), { name, link, owner: user, subscribers: [user], last_msg_time: serverTimestamp(), viewedBy: [user], isVerified: false });
+            await updateDoc(doc(db, ROOT, \"users\", \"list\", user), { subs: arrayUnion(ref.id) });
             document.getElementById('createChannelModal').style.display = 'none';
             selectChannel(ref.id);
         };
@@ -740,11 +841,12 @@
             setTimeout(() => { el.style.opacity = '0'; el.style.pointerEvents = 'none'; }, 3000); 
         }
 
-        window.openProfile = async () => {
-            // Заглушка для открытия профиля
-            document.getElementById('profileModal').style.display = 'flex';
-        };
-
+        function getHashColor(s) { 
+            const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; 
+            let h = 0; 
+            for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); 
+            return c[Math.abs(h) % c.length]; 
+        }
     </script>
 </body>
 </html>
