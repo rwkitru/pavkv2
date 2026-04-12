@@ -355,7 +355,7 @@
         let authMode = 'register';
         let directChatsWithActivity = [];
         let lastMessageTimestamps = {};
-        let unreadStates = {}; 
+        let unreadStates = {};
         let lastRenderedChatIds = "";
         let newAvatarBase64 = null;
         let replyTo = null;
@@ -363,14 +363,14 @@
         let currentMessagesCount = 0; // Для отслеживания изменений в списке сообщений
 
         const initAuth = async () => {
-          const currentVersion = localStorage.getItem('pnavkv2_app_version');
-          if (currentVersion !== APP_VERSION) {
-              localStorage.clear();
-              localStorage.setItem('pnavkv2_app_version', APP_VERSION);
-              location.reload();
-              return;
-          }
-          await signInAnonymously(auth);
+            const currentVersion = localStorage.getItem('pnavkv2_app_version');
+            if (currentVersion !== APP_VERSION) {
+                localStorage.clear();
+                localStorage.setItem('pnavkv2_app_version', APP_VERSION);
+                location.reload();
+                return;
+            }
+            await signInAnonymously(auth);
         };
         initAuth();
 
@@ -405,495 +405,259 @@
             const pass = document.getElementById('authPassword').value;
             if (!ID_REGEX.test(nameInput)) return showToast("Некорректный никнейм (4-12 симв., латиница)");
             if (pass.length < 4) return showToast("Короткий пароль");
+
             const uRef = doc(db, ROOT, "users", "list", nameInput);
             const snap = await getDoc(uRef);
+
             if (authMode === 'register') {
                 if (snap.exists()) return showToast("Ник занят");
                 let localAccounts = JSON.parse(localStorage.getItem('pnavkv2_created_accounts') || "[]");
                 if (localAccounts.length >= 2 && !localAccounts.includes(nameInput)) return showToast("Лимит: 2 аккаунта на устройство");
-                await setDoc(uRef, { username: nameInput, displayName: nameInput, password: pass, subs: [], type: 'user', last_active: serverTimestamp(), isVerified: false });
+                
+                await setDoc(uRef, { pass, subs: [], joined: serverTimestamp(), displayName: nameInput });
                 if (!localAccounts.includes(nameInput)) {
                     localAccounts.push(nameInput);
                     localStorage.setItem('pnavkv2_created_accounts', JSON.stringify(localAccounts));
                 }
                 loginAs(nameInput);
             } else {
-                if (!snap.exists() || snap.data().password !== pass) return showToast("Ошибка входа");
+                if (!snap.exists() || snap.data().pass !== pass) return showToast("Неверные данные");
                 loginAs(nameInput);
             }
         };
 
-        function updateLastActive() {
-            if (!user) return;
-            updateDoc(doc(db, ROOT, "users", "list", user), { last_active: serverTimestamp() });
-        }
-
-        function formatStatus(lastActive) {
-            if (!lastActive) return "Неизвестно";
-            const now = Date.now();
-            let last;
-            if (lastActive && typeof lastActive.toMillis === 'function') {
-                last = lastActive.toMillis();
-            } else if (lastActive && lastActive.seconds) {
-                last = lastActive.seconds * 1000;
-            } else {
-                return "Неизвестно";
-            }
-            const diff = now - last;
-            if (diff < 60000) return "В сети";
-            return `Был(а) в сети в ${new Date(last).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-        }
-
-        function loginAs(name) {
+        const loginAs = (name) => {
             user = name;
             localStorage.setItem('pnavkv2_user', name);
-            document.getElementById('authScreen').style.display = 'none';
-            document.getElementById('appSidebar').style.display = 'flex';
-            document.getElementById('chatView').style.display = 'flex';
-            
-            updateLastActive();
-            setInterval(updateLastActive, 30000);
-            
-            onSnapshot(collection(db, ROOT, "direct_chats", "list"), (s) => {
-                directChatsWithActivity = s.docs
-                    .filter(d => d.id.includes(user))
-                    .map(d => {
-                        const other = d.id.split("_v_").find(p => p !== user);
-                        const data = d.data();
-                        lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
-                        unreadStates[d.id] = data.last_msg_by && data.last_msg_by !== user && (!data.viewedBy || !data.viewedBy.includes(user));
-                        return { id: d.id, type: 'direct', username: other };
-                    });
-                renderChatList();
-            });
-            onSnapshot(doc(db, ROOT, "users", "list", name), (s) => {
-                if(s.exists()) { 
-                    const data = s.data();
-                    mySubs = data.subs || [];
-                    const avatar = data.avatar || '';
-                    document.getElementById('myUsername').textContent = '@' + (data.displayName || name);
-                    document.getElementById('setNewDisplayName').value = data.displayName || name;
-                    const sidebarAvatar = document.getElementById('mySidebarAvatar');
-                    const settingsAvatar = document.getElementById('settingsAvatarPreview');
-                    if(avatar) {
-                        sidebarAvatar.style.backgroundImage = `url(${avatar})`; sidebarAvatar.textContent = '';
-                        settingsAvatar.style.backgroundImage = `url(${avatar})`; settingsAvatar.textContent = '';
-                    } else {
-                        sidebarAvatar.style.backgroundImage = ''; sidebarAvatar.textContent = name[0].toUpperCase();
-                        settingsAvatar.style.backgroundImage = ''; settingsAvatar.textContent = name[0].toUpperCase();
-                    }
-                    renderChatList(); 
-                }
-            });
-            onSnapshot(collection(db, ROOT, "channels", "list"), (s) => {
-                channels = s.docs.map(d => {
-                    const data = d.data();
-                    lastMessageTimestamps[d.id] = data.last_msg_time?.seconds || 0;
-                    const isRelevant = data.owner === user || mySubs.includes(d.id);
-                    unreadStates[d.id] = isRelevant && data.last_msg_by && data.last_msg_by !== user && (!data.viewedBy || !data.viewedBy.includes(user));
-                    const chanObj = { id: d.id, ...data, type: 'channel' };
-                    if (activeChat && activeChat.id === d.id) {
-                        activeChat.data = chanObj;
-                        updateUI();
-                    }
-                    return chanObj;
-                });
-                renderChatList();
-            });
-            onSnapshot(collection(db, ROOT, "users", "list"), (s) => {
-                allUsers = s.docs.map(d => ({ id: d.id, ...d.data(), type: 'user' }));
-                renderChatList();
-                if(activeChat) updateUI();
-            });
-        }
-
-        window.renderChatList = () => {
-            const list = document.getElementById('chatListArea');
-            const searchInput = document.getElementById('searchInput');
-            if (!searchInput) return;
-            const search = searchInput.value.toLowerCase().replace('@', '');
-            let items = (search.length > 0) 
-                ? [...channels.filter(c => c.name.toLowerCase().includes(search) || c.link.includes(search)), ...allUsers.filter(u => u.username.includes(search) && u.username !== user)]
-                : [...channels.filter(c => c.owner === user || mySubs.includes(c.id)), ...directChatsWithActivity];
-            const unique = Array.from(new Map(items.map(i => [i.id || i.username, i])).values())
-                .sort((a, b) => {
-                    const idA = a.id || [user, a.username].sort().join("_v_");
-                    const idB = b.id || [user, b.username].sort().join("_v_");
-                    return (lastMessageTimestamps[idB] || 0) - (lastMessageTimestamps[idA] || 0);
-                });
-            const currentIds = unique.map(i => (i.id || i.username) + unreadStates[i.id || (i.id || [user, i.username].sort().join("_v_"))]).join('|');
-            if(currentIds === lastRenderedChatIds && search.length === 0) return;
-            lastRenderedChatIds = currentIds;
-            list.innerHTML = '';
-            unique.forEach(item => {
-                const isChan = item.type === 'channel';
-                const userData = !isChan ? allUsers.find(u => u.username === item.username) : null;
-                const isVerified = isChan ? item.isVerified : userData?.isVerified;
-                const chatId = isChan ? item.id : (item.id || [user, item.username].sort().join("_v_"));
-                const name = isChan ? item.name : (userData?.displayName || `@${item.username}`);
-                const subtext = isChan ? `@${item.link}` : formatStatus(userData?.last_active);
-                const avatar = isChan ? '' : (userData?.avatar || '');
-                const div = document.createElement('div');
-                div.className = `chat-item ${activeChat?.id === chatId ? 'active' : ''}`;
-                div.onclick = () => isChan ? selectChannel(item.id) : selectUser(item.username);
-                div.innerHTML = `
-                    <div class="avatar shadow-sm" style="background:${avatar ? `url(${avatar})` : getHashColor(name)}; background-size: cover; background-position: center;">${avatar ? '' : (isChan ? item.name : item.username)[0].toUpperCase()}</div>
-                    <div class="flex-1 overflow-hidden">
-                        <div class="font-bold truncate text-gray-800 flex items-center">${name} ${isVerified ? VERIFIED_HTML : ''}</div>
-                        <p class="text-[11px] ${subtext === 'В сети' ? 'text-blue-500 font-medium' : 'text-gray-400'} truncate">${subtext}</p>
-                    </div>
-                    ${unreadStates[chatId] && activeChat?.id !== chatId ? '<div class="unread-badge"></div>' : ''}`;
-                list.appendChild(div);
-            });
-        };
-
-        window.banUser = async (targetId) => {
-            const chanId = activeChat.id;
-            await updateDoc(doc(db, ROOT, "channels", "list", chanId), { subscribers: arrayRemove(targetId) });
-            await updateDoc(doc(db, ROOT, "users", "list", targetId), { subs: arrayRemove(chanId) });
-            showToast(`@${targetId} исключен`);
-            renderProfileContent();
-        };
-
-        window.updateChannelData = async () => {
-            const name = document.getElementById('editNameInput').value.trim();
-            const link = document.getElementById('editIdInput').value.trim().toLowerCase().replace('@', '');
-            if (!name || !ID_REGEX.test(link)) return showToast("Некорректные данные");
-            const querySnap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
-            if (querySnap.docs.find(d => d.id !== activeChat.id)) return showToast("Этот ID уже занят");
-            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { name, link });
-            showToast("Данные обновлены");
-        };
-
-        window.toggleJoin = async () => {
-            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(activeChat.id) });
-            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayUnion(user) });
-            showToast("Вы подписались!");
-        };
-
-        window.leaveCurrentChannel = async () => {
-            await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayRemove(activeChat.id) });
-            await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayRemove(user) });
-            document.getElementById('noChannelView').classList.remove('hidden');
-            document.getElementById('activeChannelContent').classList.add('hidden');
-            activeChat = null;
-        };
-
-        window.selectChannel = (id) => {
-            if(activeChat?.id === id) return;
-            const c = channels.find(x => x.id === id);
-            activeChat = { id, type: 'channel', data: c };
-            lastMessagesData = []; 
-            currentMessagesCount = 0; // Сброс счетчика при смене чата
-            document.getElementById('messagesArea').innerHTML = '';
-            updateUI();
-            updateDoc(doc(db, ROOT, "channels", "list", id), { viewedBy: arrayUnion(user) });
-            subscribeToMessages(collection(db, ROOT, "channels", "list", id, "messages"));
-        };
-
-        window.selectUser = async (targetUser) => {
-            const chatId = [user, targetUser].sort().join("_v_");
-            if(activeChat?.id === chatId) return;
-            activeChat = { id: chatId, type: 'direct', targetUser };
-            lastMessagesData = [];
-            currentMessagesCount = 0; // Сброс счетчика при смене чата
-            document.getElementById('messagesArea').innerHTML = '';
-            updateUI();
-            const chatRef = doc(db, ROOT, "direct_chats", "list", chatId);
-            const chatSnap = await getDoc(chatRef);
-            if (!chatSnap.exists()) await setDoc(chatRef, { members: [user, targetUser], last_msg_time: serverTimestamp() });
-            updateDoc(chatRef, { viewedBy: arrayUnion(user) });
-            subscribeToMessages(collection(db, ROOT, "direct_chats", "list", chatId, "messages"));
-        };
-
-        function subscribeToMessages(colRef) {
-            if (window.msgUnsub) window.msgUnsub();
-            window.msgUnsub = onSnapshot(colRef, (s) => {
-                const msgs = s.docs.map(d => ({id: d.id, ...d.data()}));
-                renderMessages(msgs);
-            });
-            if (window.innerWidth <= 768) document.getElementById('appSidebar').classList.add('hidden-mobile');
-            renderChatList();
-        }
-
-        let lastMessagesData = []; 
-        function renderMessages(msgs) {
-            const area = document.getElementById('messagesArea');
-            const sortedMsgs = [...msgs].sort((a, b) => (a.time?.toMillis() || Date.now() + 10000) - (b.time?.toMillis() || Date.now() + 10000));
-            
-            // Проверяем, добавились ли новые сообщения или это просто обновление существующих
-            const isNewMessageAdded = sortedMsgs.length > currentMessagesCount;
-            currentMessagesCount = sortedMsgs.length;
-
-            area.innerHTML = sortedMsgs.map(m => {
-                const isMine = m.sender === user;
-                const isImageOnly = m.image && !m.text;
-                const senderData = allUsers.find(u => u.username === m.sender);
-                const senderName = senderData?.displayName || `@${m.sender}`;
-                const timeStr = m.time ? new Date(m.time.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
-                
-                if (activeChat.type === 'channel' && !isMine && (!m.viewedBy || !m.viewedBy.includes(user))) {
-                    updateDoc(doc(db, ROOT, "channels", "list", activeChat.id, "messages", m.id), {
-                        viewCount: increment(1),
-                        viewedBy: arrayUnion(user)
-                    });
-                }
-
-                let replyHTML = '';
-                if (m.replyTo) {
-                    replyHTML = `
-                        <div class="reply-quote" onclick="scrollToMsg('${m.replyTo.id}')">
-                            <span class="block font-bold text-[11px] truncate">${m.replyTo.sender}</span>
-                            <span class="block truncate">${m.replyTo.text}</span>
-                        </div>`;
-                }
-
-                let contentHTML = '';
-                if (m.image) contentHTML += `<img src="${m.image}" class="msg-image" onclick="openMedia('${m.image}', '${m.id}', '${senderName}')"/>`;
-                if (m.text) contentHTML += `<div class="break-words ${m.image ? 'mt-2' : ''}">${m.text} ${m.isEdited ? '<span class="text-[9px] opacity-50 italic">(изм.)</span>' : ''}</div>`;
-                
-                const viewsHTML = (activeChat.type === 'channel') ? `
-                    <div class="views-badge flex items-center gap-1 opacity-70">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                        <span class="text-[9px] font-bold">${m.viewCount || 0}</span>
-                    </div>` : '';
-
-                // Отрисовка группированных реакций
-                let reactionsHTML = '';
-                if (m.reactions) {
-                    const counts = {};
-                    Object.values(m.reactions).forEach(emo => counts[emo] = (counts[emo] || 0) + 1);
-                    reactionsHTML = `<div class="message-reactions">`;
-                    for (const [emo, count] of Object.entries(counts)) {
-                        reactionsHTML += `<div class="reaction-badge" onclick="setReaction('${m.id}', '${emo}')">${emo} ${count > 1 ? count : ''}</div>`;
-                    }
-                    reactionsHTML += `</div>`;
-                }
-
-                return `
-                <div class="message-bubble ${isMine ? 'mine' : ''} ${isImageOnly ? 'image-only' : ''}" 
-                     data-msg-id="${m.id}" 
-                     ondblclick="setReaction('${m.id}', '❤️')"
-                     oncontextmenu="handleLongPress(event, '${m.id}', '${senderName}', '${(m.text || '').replace(/'/g, "\\'")}', ${!!m.image}, ${isMine})"
-                     ontouchstart="startTouch(event, '${m.id}', '${senderName}', '${(m.text || '').replace(/'/g, "\\'")}', ${!!m.image}, ${isMine})"
-                     ontouchend="endTouch()">
-                    ${!isMine && activeChat.type === 'channel' && !isImageOnly ? `<div class="text-[10px] font-bold text-blue-600 mb-1 flex items-center">${senderName} ${senderData?.isVerified ? VERIFIED_HTML : ''}</div>` : ''}
-                    ${replyHTML}
-                    ${contentHTML}
-                    <div class="${isImageOnly ? 'msg-meta-overlay' : 'flex items-center justify-end gap-2 mt-1'}">
-                        ${viewsHTML}
-                        <div class="msg-time text-[9px] font-medium ${!isImageOnly && isMine ? 'text-blue-100' : 'text-gray-400'}">${timeStr}</div>
-                    </div>
-                    ${reactionsHTML}
-                </div>`;
-            }).join('');
-            
-            // Листаем вниз только если добавлено новое сообщение
-            if (isNewMessageAdded) {
-                area.scrollTop = area.scrollHeight;
-            }
-        }
-
-        // --- Обработка Long Press ---
-        let touchTimer;
-        window.startTouch = (e, id, sender, text, hasImg, isMine) => {
-            touchTimer = setTimeout(() => {
-                showMsgMenu(e.touches[0].clientX, e.touches[0].clientY, id, sender, text, hasImg, isMine);
+            document.getElementById('authScreen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('authScreen').style.display = 'none';
+                document.getElementById('appSidebar').style.display = 'flex';
+                document.getElementById('chatView').style.display = 'flex';
+                startApp();
             }, 500);
         };
-        window.endTouch = () => clearTimeout(touchTimer);
-        window.handleLongPress = (e, id, sender, text, hasImg, isMine) => {
-            e.preventDefault();
-            showMsgMenu(e.clientX, e.clientY, id, sender, text, hasImg, isMine);
-        };
 
-        // --- Обновленное Контекстное Меню ---
-        window.showMsgMenu = (x, y, id, sender, text, hasImg, isMine) => {
-            const menu = document.getElementById('msgContextMenu');
-            const menuW = 220;
-            const menuH = 200;
-            let left = x - 20;
-            let top = y - 20;
-            if (x + menuW > window.innerWidth) left = x - menuW + 20;
-            if (y + menuH > window.innerHeight) top = y - menuH;
-            
-            // Динамически создаем содержимое меню (реакции + кнопки)
-            let reactionsHTML = `<div class="reactions-row">`;
-            EMOJI_LIST.forEach(emo => {
-                reactionsHTML += `<span class="emoji-item" onclick="setReaction('${id}', '${emo}')">${emo}</span>`;
+        const startApp = () => {
+            onSnapshot(doc(db, ROOT, "users", "list", user), (snap) => {
+                if (!snap.exists()) return;
+                const data = snap.data();
+                mySubs = data.subs || [];
+                document.getElementById('myUsername').textContent = '@' + user;
+                const av = document.getElementById('mySidebarAvatar');
+                if (data.avatar) {
+                    av.style.backgroundImage = `url(${data.avatar})`;
+                    av.textContent = "";
+                } else {
+                    av.style.backgroundImage = 'none';
+                    av.textContent = user[0].toUpperCase();
+                }
+                renderChatList();
             });
-            reactionsHTML += `</div>`;
 
-            menu.innerHTML = `
-                ${reactionsHTML}
-                <div class="context-menu-item" id="ctxReply">
-                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" stroke-width="2"/></svg>
-                    Ответить
-                </div>
-                <div class="context-menu-item" id="ctxCopy">
-                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2" stroke-width="2"/></svg>
-                    Копировать
-                </div>
-                ${isMine && !hasImg ? `
-                <div class="context-menu-item" id="ctxEdit">
-                    <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2"/></svg>
-                    Изменить
-                </div>` : ''}
-                ${isMine ? `
-                <div class="context-menu-item danger" id="ctxDelete">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
-                    Удалить
-                </div>` : ''}
-            `;
+            onSnapshot(collection(db, ROOT, "channels", "list"), (snap) => {
+                channels = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderChatList();
+            });
 
-            menu.style.top = `${top}px`;
-            menu.style.left = `${left}px`;
-            menu.classList.add('active');
-
-            // Привязываем обработчики
-            document.getElementById('ctxReply').onclick = () => { initReply(id, sender, text, hasImg); menu.classList.remove('active'); };
-            document.getElementById('ctxCopy').onclick = () => { 
-                if(!text && hasImg) { showToast("Это фото без текста"); }
-                else { navigator.clipboard.writeText(text); showToast("Скопировано"); }
-                menu.classList.remove('active'); 
-            };
-            if(document.getElementById('ctxEdit')) document.getElementById('ctxEdit').onclick = () => { initEdit(id, text); menu.classList.remove('active'); };
-            if(document.getElementById('ctxDelete')) document.getElementById('ctxDelete').onclick = () => { deleteMessage(id); menu.classList.remove('active'); };
-
-            const close = () => { menu.classList.remove('active'); document.removeEventListener('click', close); };
-            setTimeout(() => document.addEventListener('click', close), 10);
+            onSnapshot(collection(db, ROOT, "users", "list"), (snap) => {
+                allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderChatList();
+            });
         };
 
-        // --- Установка Реакции ---
-        window.setReaction = async (msgId, emoji) => {
-            if (!activeChat) return;
-            const isChan = activeChat.type === 'channel';
-            const colPath = isChan ? "channels" : "direct_chats";
-            const msgRef = doc(db, ROOT, colPath, "list", activeChat.id, "messages", msgId);
+        const renderChatList = () => {
+            const area = document.getElementById('chatListArea');
+            const search = document.getElementById('searchInput').value.trim().toLowerCase();
             
-            const snap = await getDoc(msgRef);
-            if (!snap.exists()) return;
+            let items = [];
             
-            const currentReactions = snap.data().reactions || {};
-            // Если такая же реакция уже стоит от этого юзера - убираем её
-            if (currentReactions[user] === emoji) {
-                delete currentReactions[user];
+            if (search) {
+                const filteredUsers = allUsers.filter(u => u.id !== user && (u.id.includes(search) || (u.displayName && u.displayName.toLowerCase().includes(search))));
+                items = filteredUsers.map(u => ({ type: 'user', id: u.id, name: u.displayName || u.id, avatar: u.avatar, isVerified: u.isVerified }));
+                
+                const filteredChannels = channels.filter(c => c.name.toLowerCase().includes(search) || c.link.toLowerCase().includes(search));
+                items = [...items, ...filteredChannels.map(c => ({ type: 'channel', id: c.id, name: c.name, avatar: c.avatar, isVerified: c.isVerified }))];
             } else {
-                currentReactions[user] = emoji;
+                const subbedChannels = channels.filter(c => mySubs.includes(c.id));
+                items = subbedChannels.map(c => ({ 
+                    type: 'channel', 
+                    id: c.id, 
+                    name: c.name, 
+                    avatar: c.avatar, 
+                    last_msg: c.last_msg, 
+                    last_msg_time: c.last_msg_time,
+                    isVerified: c.isVerified
+                }));
             }
 
-            await updateDoc(msgRef, { reactions: currentReactions });
-            document.getElementById('msgContextMenu').classList.remove('active');
+            items.sort((a, b) => {
+                const timeA = a.last_msg_time?.toDate ? a.last_msg_time.toDate().getTime() : 0;
+                const timeB = b.last_msg_time?.toDate ? b.last_msg_time.toDate().getTime() : 0;
+                return timeB - timeA;
+            });
+
+            const currentIds = items.map(i => i.id).join('|');
+            if (currentIds === lastRenderedChatIds) return;
+            lastRenderedChatIds = currentIds;
+
+            area.innerHTML = '';
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = `chat-item ${activeChat === item.id ? 'active' : ''}`;
+                div.onclick = () => selectChannel(item.id, item.type === 'user');
+                
+                const isVerified = item.isVerified ? VERIFIED_HTML : '';
+                const timeStr = formatTime(item.last_msg_time);
+                
+                // Исправленная отрисовка аватарки
+                const avatarStyle = item.avatar ? `background-image: url(${item.avatar}); background-color: transparent;` : `background-color: ${getHashColor(item.id)}`;
+                const avatarContent = item.avatar ? '' : item.name[0].toUpperCase();
+
+                div.innerHTML = `
+                    <div class="avatar" style="${avatarStyle}">${avatarContent}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="font-bold text-sm truncate flex items-center">${item.name}${isVerified}</span>
+                            <span class="text-[10px] text-gray-400 font-medium">${timeStr}</span>
+                        </div>
+                        <p class="text-xs text-gray-400 truncate">${item.last_msg || (item.type === 'user' ? 'Личное сообщение' : 'Нет сообщений')}</p>
+                    </div>
+                `;
+                area.appendChild(div);
+            });
         };
 
-        // --- Остальные функции (Pinch to Zoom, Pan, etc) ---
-        let scale = 1, lastScale = 1;
-        let startDist = 0;
-        let isDragging = false;
-        let startX = 0, startY = 0;
-        let offsetX = 0, offsetY = 0;
-        const img = document.getElementById('fullImg');
-        const viewer = document.getElementById('mediaViewer');
+        const formatTime = (ts) => {
+            if (!ts) return "";
+            // Обработка объекта Timestamp Firebase
+            const date = ts.toDate ? ts.toDate() : new Date(ts);
+            if (isNaN(date.getTime())) return "";
 
-        window.openMedia = (src, id, sender) => {
-            img.src = src;
-            document.getElementById('imgDl').href = src;
-            viewer.style.display = 'flex';
-            scale = 1; lastScale = 1;
-            offsetX = 0; offsetY = 0;
-            updateImgTransform();
-            document.getElementById('mediaReply').onclick = () => { initReply(id, sender, "Фотография", true); closeMedia(); };
-        };
-
-        function updateImgTransform() {
-            img.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
-        }
-
-        viewer.addEventListener('wheel', e => {
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? -0.2 : 0.2;
-            scale = Math.min(Math.max(1, scale + delta), 5);
-            if (scale === 1) { offsetX = 0; offsetY = 0; }
-            updateImgTransform();
-        }, { passive: false });
-
-        const startPan = (x, y) => {
-            isDragging = true;
-            startX = x - offsetX;
-            startY = y - offsetY;
-        };
-        const movePan = (x, y) => {
-            if (!isDragging || scale <= 1) return;
-            offsetX = x - startX;
-            offsetY = y - startY;
-            updateImgTransform();
-        };
-        const endPan = () => { isDragging = false; };
-
-        viewer.addEventListener('mousedown', e => startPan(e.clientX, e.clientY));
-        window.addEventListener('mousemove', e => movePan(e.clientX, e.clientY));
-        window.addEventListener('mouseup', endPan);
-
-        viewer.addEventListener('touchstart', e => {
-            if (e.touches.length === 2) {
-                startDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-            } else if (e.touches.length === 1) {
-                startPan(e.touches[0].clientX, e.touches[0].clientY);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return "сейчас";
+            if (diff < 3600000) return Math.floor(diff / 60000) + "м";
+            
+            if (date.toDateString() === now.toDateString()) {
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             }
-        });
+            return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+        };
 
-        viewer.addEventListener('touchmove', e => {
-            if (e.touches.length === 2) {
-                const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                scale = Math.min(Math.max(1, lastScale * (dist / startDist)), 5);
-                if (scale === 1) { offsetX = 0; offsetY = 0; }
-                updateImgTransform();
-            } else if (e.touches.length === 1) {
-                movePan(e.touches[0].clientX, e.touches[0].clientY);
+        const getHashColor = (s) => {
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+            let hash = 0;
+            for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+            return colors[Math.abs(hash) % colors.length];
+        };
+
+        window.selectChannel = async (id, isDirect = false) => {
+            activeChat = id;
+            document.getElementById('noChannelView').style.display = 'none';
+            document.getElementById('activeChannelContent').classList.remove('hidden');
+            if (window.innerWidth <= 768) document.getElementById('appSidebar').classList.add('hidden-mobile');
+
+            let chatData = isDirect ? allUsers.find(u => u.id === id) : channels.find(c => c.id === id);
+            if (!chatData && isDirect) {
+                 const snap = await getDoc(doc(db, ROOT, "users", "list", id));
+                 chatData = { id: snap.id, ...snap.data() };
             }
-        });
 
-        viewer.addEventListener('touchend', e => {
-            lastScale = scale;
-            endPan();
-        });
+            const title = document.getElementById('headerTitle');
+            const meta = document.getElementById('headerMeta');
+            const av = document.getElementById('headerAvatar');
 
-        const mediaMoreBtn = document.getElementById('mediaMoreBtn');
-        const mediaOptions = document.getElementById('mediaOptions');
-        mediaMoreBtn.onclick = (e) => {
-            e.stopPropagation();
-            mediaOptions.style.display = mediaOptions.style.display === 'flex' ? 'none' : 'flex';
-        };
-        viewer.onclick = (e) => { 
-            if(e.target === viewer || e.target === img) mediaOptions.style.display = 'none'; 
-        };
+            title.innerHTML = (chatData.name || chatData.displayName || chatData.id) + (chatData.isVerified ? VERIFIED_HTML : '');
+            meta.textContent = isDirect ? 'Личный чат' : `@${chatData.link}`;
+            
+            if (chatData.avatar) {
+                av.style.backgroundImage = `url(${chatData.avatar})`;
+                av.textContent = "";
+            } else {
+                av.style.backgroundImage = 'none';
+                av.style.backgroundColor = getHashColor(id);
+                av.textContent = (chatData.name || chatData.displayName || chatData.id)[0].toUpperCase();
+            }
 
-        window.closeMedia = () => { viewer.style.display = 'none'; mediaOptions.style.display = 'none'; };
-
-        window.deleteMessage = async (msgId) => {
-            if (!activeChat) return;
-            const isChan = activeChat.type === 'channel';
-            const colPath = isChan ? "channels" : "direct_chats";
-            try {
-                await deleteDoc(doc(db, ROOT, colPath, "list", activeChat.id, "messages", msgId));
-                showToast("Сообщение удалено");
-            } catch (e) { showToast("Ошибка удаления"); }
+            renderChatList();
+            loadMessages(id, isDirect);
         };
 
-        window.initEdit = (id, text) => {
-            editingMsgId = id;
+        let msgUnsub = null;
+        const loadMessages = (chatId, isDirect) => {
+            if (msgUnsub) msgUnsub();
+            const colPath = isDirect ? 
+                [user, chatId].sort().join('_') : 
+                chatId;
+
+            msgUnsub = onSnapshot(collection(db, ROOT, "messages", colPath, "list"), (snap) => {
+                const area = document.getElementById('messagesArea');
+                const sorted = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.time?.toDate ? a.time.toDate() : 0) - (b.time?.toDate ? b.time.toDate() : 0));
+                
+                area.innerHTML = '';
+                sorted.forEach(m => {
+                    const isMine = m.sender === user;
+                    const div = document.createElement('div');
+                    div.className = `message-bubble ${isMine ? 'mine' : ''} ${m.type === 'image' ? 'image-only' : ''}`;
+                    
+                    let content = '';
+                    if (m.replyTo) {
+                        content += `<div class="reply-quote" onclick="scrollToMessage('${m.replyTo.id}')">
+                            <b class="block text-[10px]">${m.replyTo.user}</b>
+                            <span class="truncate block">${m.replyTo.text}</span>
+                        </div>`;
+                    }
+
+                    if (m.type === 'image') {
+                        content += `<img src="${m.content}" class="msg-image" onclick="viewMedia('${m.content}', '${m.id}')">`;
+                        content += `<div class="msg-meta-overlay">
+                            <span class="text-[9px]">${formatTime(m.time)}</span>
+                        </div>`;
+                    } else {
+                        content += `<div>${m.content}</div>`;
+                        content += `<div class="text-[9px] mt-1 text-right opacity-60">${formatTime(m.time)}</div>`;
+                    }
+
+                    div.innerHTML = content;
+                    area.appendChild(div);
+                });
+                area.scrollTop = area.scrollHeight;
+            });
+        };
+
+        window.sendMessage = async () => {
             const input = document.getElementById('msgInput');
-            input.value = text;
-            input.focus();
-            showToast("Редактирование...");
-        };
+            const text = input.value.trim();
+            if (!text && !replyTo) return;
 
-        window.initReply = (id, sender, text, hasImg) => {
-            replyTo = { id, sender, text: hasImg ? "Фотография" : text };
-            document.getElementById('replyTargetUser').textContent = sender;
-            document.getElementById('replyTargetText').textContent = replyTo.text;
-            document.getElementById('replyBar').style.display = 'flex';
-            document.getElementById('msgInput').focus();
+            const isDirect = !channels.find(c => c.id === activeChat);
+            const colPath = isDirect ? [user, activeChat].sort().join('_') : activeChat;
+
+            const msgData = {
+                sender: user,
+                content: text,
+                time: serverTimestamp(),
+                type: 'text'
+            };
+
+            if (replyTo) {
+                msgData.replyTo = replyTo;
+                cancelReply();
+            }
+
+            await addDoc(collection(db, ROOT, "messages", colPath, "list"), msgData);
+            
+            // Обновляем последнее сообщение в канале/чате
+            if (!isDirect) {
+                await updateDoc(doc(db, ROOT, "channels", "list", activeChat), {
+                    last_msg: text.substring(0, 30),
+                    last_msg_time: serverTimestamp()
+                });
+            }
+
+            input.value = '';
         };
 
         window.cancelReply = () => {
@@ -901,180 +665,86 @@
             document.getElementById('replyBar').style.display = 'none';
         };
 
-        window.scrollToMsg = (id) => {
-            const el = document.querySelector(`[data-msg-id="${id}"]`);
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.classList.add('ring-2', 'ring-blue-400');
-                setTimeout(() => el.classList.remove('ring-2', 'ring-blue-400'), 2000);
+        window.openSettings = async () => {
+            const snap = await getDoc(doc(db, ROOT, "users", "list", user));
+            const data = snap.data();
+            document.getElementById('setNewDisplayName').value = data.displayName || user;
+            const prev = document.getElementById('settingsAvatarPreview');
+            if (data.avatar) {
+                prev.style.backgroundImage = `url(${data.avatar})`;
+                prev.textContent = "";
+            } else {
+                prev.style.backgroundImage = "none";
+                prev.textContent = user[0].toUpperCase();
             }
-        };
-
-        window.handleImageUpload = (input) => {
-            const file = input.files[0];
-            if (!file || file.size > 1.5 * 1024 * 1024) return showToast("Размер фото > 1.5MB");
-            const reader = new FileReader();
-            reader.onload = (e) => { sendMessage(e.target.result); input.value = ''; };
-            reader.readAsDataURL(file);
+            document.getElementById('settingsModal').style.display = 'flex';
         };
 
         window.handleAvatarUpload = (input) => {
             const file = input.files[0];
             if (!file) return;
-            newAvatarBase64 = null;
             const reader = new FileReader();
             reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_SIZE = 400;
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } } 
-                    else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
-                    canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    newAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
-                    const preview = document.getElementById('settingsAvatarPreview');
-                    preview.style.backgroundImage = `url(${newAvatarBase64})`;
-                    preview.textContent = '';
-                };
-                img.src = e.target.result;
+                newAvatarBase64 = e.target.result;
+                const prev = document.getElementById('settingsAvatarPreview');
+                prev.style.backgroundImage = `url(${newAvatarBase64})`;
+                prev.textContent = "";
             };
             reader.readAsDataURL(file);
-            input.value = '';
         };
 
         window.saveProfileChanges = async () => {
-            const newDisplayName = document.getElementById('setNewDisplayName').value.trim();
+            const newName = document.getElementById('setNewDisplayName').value.trim();
             const newPass = document.getElementById('setNewPassword').value;
-            if (!newDisplayName) return showToast("Имя не может быть пустым");
-            const updates = { displayName: newDisplayName };
-            if (newAvatarBase64) updates.avatar = newAvatarBase64;
-            if (newPass && newPass.length >= 4) updates.password = newPass;
-            try {
-                await updateDoc(doc(db, ROOT, "users", "list", user), updates);
-                newAvatarBase64 = null;
-                showToast("✅ Сохранено успешно");
-                setTimeout(() => { document.getElementById('settingsModal').style.display = 'none'; }, 400);
-            } catch (err) { showToast("❌ Ошибка записи"); }
+            const update = { displayName: newName || user };
+            if (newPass) update.pass = newPass;
+            if (newAvatarBase64) update.avatar = newAvatarBase64;
+
+            await updateDoc(doc(db, ROOT, "users", "list", user), update);
+            showToast("Профиль обновлен");
+            document.getElementById('settingsModal').style.display = 'none';
+            newAvatarBase64 = null;
         };
 
-        window.sendMessage = async (imgData = null) => {
-            const input = document.getElementById('msgInput');
-            const text = input.value.trim();
-            if (!text && !imgData || !activeChat) return;
-            const currentChat = { ...activeChat };
-            const isChan = currentChat.type === 'channel';
-            const colPath = isChan ? "channels" : "direct_chats";
-
-            if (editingMsgId) {
-                try {
-                    await updateDoc(doc(db, ROOT, colPath, "list", currentChat.id, "messages", editingMsgId), {
-                        text: text,
-                        isEdited: true
-                    });
-                    editingMsgId = null;
-                    input.value = '';
-                    showToast("Изменено");
-                } catch (e) { showToast("Ошибка редактирования"); }
-                return;
-            }
-
-            const currentReply = replyTo ? { ...replyTo } : null; 
-            input.value = '';
-            cancelReply();
-            
-            const msgData = { sender: user, time: serverTimestamp(), viewCount: isChan ? 1 : 0, viewedBy: [user], reactions: {} };
-            if (text) msgData.text = text;
-            if (imgData) msgData.image = imgData;
-            if (currentReply) msgData.replyTo = currentReply;
-            try {
-                await addDoc(collection(db, ROOT, colPath, "list", currentChat.id, "messages"), msgData);
-                await setDoc(doc(db, ROOT, colPath, "list", currentChat.id), { last_msg_time: serverTimestamp(), last_msg_by: user, viewedBy: [user] }, { merge: true });
-            } catch (e) { showToast("Ошибка отправки"); }
-        };
-
-        function updateUI() {
-            if (!activeChat) return;
-            document.getElementById('noChannelView').classList.add('hidden');
-            document.getElementById('activeChannelContent').classList.remove('hidden');
-            const c = activeChat.type === 'channel' ? activeChat.data : null;
-            const userData = !c ? allUsers.find(u => u.username === activeChat.targetUser) : null;
-            const isVerified = c ? c.isVerified : userData?.isVerified;
-            const titleName = c ? c.name : (userData?.displayName || `@${activeChat.targetUser}`);
-            document.getElementById('headerTitle').innerHTML = titleName + (isVerified ? VERIFIED_HTML : '');
-            document.getElementById('headerMeta').textContent = c ? `@${c.link} • ${c.subscribers?.length || 0} подп.` : formatStatus(userData?.last_active);
-            const headerAvatar = document.getElementById('headerAvatar');
-            const avatarImg = c ? '' : (userData?.avatar || '');
-            if(avatarImg) { headerAvatar.style.backgroundImage = `url(${avatarImg})`; headerAvatar.textContent = ''; }
-            else { headerAvatar.style.backgroundImage = ''; headerAvatar.textContent = (c ? c.name : activeChat.targetUser)[0].toUpperCase(); headerAvatar.style.backgroundColor = getHashColor(c ? c.name : activeChat.targetUser); }
-            if (c) {
-                const isOwner = c.owner === user;
-                document.getElementById('messageControls').classList.toggle('hidden', !isOwner && !mySubs.includes(activeChat.id));
-            } else {
-                document.getElementById('messageControls').classList.remove('hidden');
-            }
-        }
-
-        window.openProfile = () => { renderProfileContent(); document.getElementById('profileModal').style.display = 'flex'; };
-
-        function renderProfileContent() {
-            if (!activeChat) return;
-            const isChan = activeChat.type === 'channel';
-            const c = isChan ? activeChat.data : null;
-            const userData = !isChan ? allUsers.find(u => u.username === activeChat.targetUser) : null;
-            const isVerified = isChan ? c.isVerified : userData?.isVerified;
-            const isOwner = isChan && c.owner === user;
-            const profNameText = isChan ? c.name : (userData?.displayName || `@${activeChat.targetUser}`);
-            document.getElementById('profName').innerHTML = profNameText + (isVerified ? VERIFIED_HTML : '');
-            document.getElementById('profId').textContent = isChan ? `@${c.link}` : 'Пользователь';
-            const profAvatar = document.getElementById('profAvatar');
-            const avatarImg = isChan ? '' : (userData?.avatar || '');
-            if(avatarImg) { profAvatar.style.backgroundImage = `url(${avatarImg})`; profAvatar.textContent = ''; }
-            else { profAvatar.style.backgroundImage = ''; profAvatar.textContent = (isChan ? c.name : activeChat.targetUser)[0].toUpperCase(); profAvatar.style.backgroundColor = getHashColor(isChan ? c.name : activeChat.targetUser); }
-            document.getElementById('ownerEditSection').classList.toggle('hidden', !isOwner);
-            document.getElementById('subscribersSection').classList.toggle('hidden', !isOwner);
-            if (isOwner) {
-                document.getElementById('editNameInput').value = c.name;
-                document.getElementById('editIdInput').value = c.link;
-                document.getElementById('subCountBadge').textContent = c.subscribers?.length || 0;
-                const list = document.getElementById('subsListArea');
-                list.innerHTML = '';
-                (c.subscribers || []).forEach(subId => {
-                    const subData = allUsers.find(u => u.username === subId);
-                    const subName = subData?.displayName || `@${subId}`;
-                    const div = document.createElement('div');
-                    div.className = "flex items-center justify-between p-2 bg-gray-50 rounded-xl";
-                    div.innerHTML = `<div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-cover bg-center" style="background:${subData?.avatar ? `url(${subData.avatar})` : getHashColor(subId)}">${subData?.avatar ? '' : subId[0].toUpperCase()}</div><span class="text-sm font-medium flex items-center">${subName} ${subData?.isVerified ? VERIFIED_HTML : ''}</span></div>
-                        ${subId !== user ? `<button onclick="banUser('${subId}')" class="text-[10px] text-red-500 font-bold hover:bg-red-100 px-2 py-1 rounded-lg transition-colors">БАН</button>` : ''}`;
-                    list.appendChild(div);
-                });
-            }
-            const meta = document.getElementById('profMeta');
-            if (isChan) meta.innerHTML = `<p class="text-sm">Владелец: <b>@${c.owner}</b></p><p class="text-sm">Создан: ${c.last_msg_time ? new Date(c.last_msg_time.seconds * 1000).toLocaleDateString() : 'недавно'}</p>`;
-            else meta.innerHTML = `<p class="text-sm">${formatStatus(userData?.last_active)}</p><p class="text-xs text-gray-400 mt-2">Личный чат</p>`;
-        }
-
-        window.openSettings = () => { document.getElementById('settingsModal').style.display = 'flex'; };
         window.openCreateModal = () => document.getElementById('createChannelModal').style.display = 'flex';
+
         window.saveNewChannel = async () => {
             const name = document.getElementById('createNameInput').value.trim();
-            const link = document.getElementById('createIdInput').value.trim().toLowerCase().replace('@', '');
+            const link = document.getElementById('createIdInput').value.trim().toLowerCase();
             if (!name || !ID_REGEX.test(link)) return showToast("Некорректные данные");
+
             const snap = await getDocs(query(collection(db, ROOT, "channels", "list"), where("link", "==", link)));
             if (!snap.empty) return showToast("ID занят");
-            const ref = await addDoc(collection(db, ROOT, "channels", "list"), { name, link, owner: user, subscribers: [user], last_msg_time: serverTimestamp(), viewedBy: [user], isVerified: false });
+
+            const ref = await addDoc(collection(db, ROOT, "channels", "list"), { 
+                name, 
+                link, 
+                owner: user, 
+                subscribers: [user], 
+                last_msg_time: serverTimestamp(),
+                last_msg: "Канал создан"
+            });
             await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(ref.id) });
             document.getElementById('createChannelModal').style.display = 'none';
             selectChannel(ref.id);
         };
+
         window.goBack = () => document.getElementById('appSidebar').classList.remove('hidden-mobile');
         window.logout = () => { localStorage.removeItem('pnavkv2_user'); location.reload(); };
-        function showToast(t) { const el = document.getElementById('toast'); el.textContent = t; el.style.opacity = '1'; el.style.pointerEvents = 'auto'; setTimeout(() => { el.style.opacity = '0'; el.style.pointerEvents = 'none'; }, 3000); }
-        function getHashColor(s) { const c = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']; let h = 0; for(let i=0; i<s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return c[Math.abs(h) % c.length]; }
-        document.getElementById('msgInput').addEventListener('keypress', e => e.key === 'Enter' && sendMessage());
+        
+        function showToast(t) { 
+            const el = document.getElementById('toast'); 
+            el.textContent = t; 
+            el.style.opacity = '1'; 
+            el.style.pointerEvents = 'auto'; 
+            setTimeout(() => { el.style.opacity = '0'; el.style.pointerEvents = 'none'; }, 3000); 
+        }
+
+        window.openProfile = async () => {
+            // Заглушка для открытия профиля
+            document.getElementById('profileModal').style.display = 'flex';
+        };
+
     </script>
 </body>
 </html>
