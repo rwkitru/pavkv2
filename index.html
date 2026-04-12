@@ -12,7 +12,6 @@
         body { font-family: 'Inter', sans-serif; background-color: #f4f7fa; margin: 0; overflow: hidden; height: 100vh; height: -webkit-fill-available; transition: background 0.3s ease; }
         html { height: -webkit-fill-available; }
         
-        /* Запрет выделения текста для элементов интерфейса и сообщений */
         .sidebar, .media-actions, .media-menu, .context-menu, button, .chat-item, .message-bubble {
             user-select: none;
             -webkit-user-select: none;
@@ -43,7 +42,6 @@
         .message-bubble.image-only .msg-image { margin: 0 !important; border-radius: 18px !important; display: block; }
         .message-bubble.image-only .msg-meta-overlay { position: absolute; bottom: 8px; right: 8px; background: rgba(0, 0, 0, 0.45); padding: 2px 8px; border-radius: 10px; color: white !important; backdrop-filter: blur(4px); display: flex; align-items: center; gap: 6px; z-index: 5; }
 
-        /* Реакции под сообщением */
         .message-reactions { display: flex; flex-wrap: wrap; gap: 4px; position: absolute; bottom: -10px; left: 10px; z-index: 10; }
         .mine .message-reactions { left: auto; right: 10px; flex-direction: row-reverse; }
         .reaction-badge { background: white; padding: 2px 6px; border-radius: 10px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #f1f5f9; color: #333; cursor: pointer; display: flex; align-items: center; gap: 2px; }
@@ -85,7 +83,6 @@
         .reply-quote { background: rgba(0,0,0,0.05); border-left: 3px solid #3b82f6; padding: 4px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 13px; cursor: pointer; max-width: 100%; }
         .mine .reply-quote { background: rgba(255,255,255,0.15); border-left-color: white; color: white; }
 
-        /* Контекстное меню с рядом эмодзи */
         .context-menu { position: fixed; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 220px; z-index: 1000; overflow: hidden; transform: scale(0.8); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-origin: center; }
         .context-menu.active { transform: scale(1); opacity: 1; pointer-events: auto; }
         
@@ -98,7 +95,6 @@
         .context-menu-item:active { background: #f1f5f9; }
         .context-menu-item.danger { color: #ef4444; }
 
-        /* Media Viewer Styles */
         #mediaViewer { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; backdrop-filter: blur(15px); overflow: hidden; touch-action: none; cursor: grab; }
         #mediaViewer:active { cursor: grabbing; }
         
@@ -118,6 +114,14 @@
         .media-menu { position: absolute; top: 70px; right: 20px; background: rgba(30,41,59,0.9); backdrop-filter: blur(10px); border-radius: 16px; padding: 8px; display: none; flex-direction: column; gap: 4px; min-width: 140px; border: 1px solid rgba(255,255,255,0.1); z-index: 530; }
         .media-menu-item { color: white; font-size: 14px; padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .media-menu-item:active { background: rgba(255,255,255,0.1); }
+
+        #joinBar { display: none; background: white; border-top: 1px solid #eee; padding: 12px; }
+
+        /* Dropdown Menu Styles */
+        .dropdown-menu { position: absolute; top: 50px; right: 10px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 100; border: 1px solid #f1f5f9; overflow: hidden; min-width: 180px; }
+        .dropdown-item { padding: 12px 16px; font-size: 14px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.2s; }
+        .dropdown-item:hover { background: #f8fafc; }
+        .dropdown-item.danger { color: #ef4444; }
     </style>
 </head>
 <body class="flex">
@@ -182,7 +186,7 @@
         </div>
 
         <div id="activeChannelContent" class="hidden flex-1 flex flex-col h-full overflow-hidden transition-opacity duration-300">
-            <header class="bg-white px-3 py-2 md:px-4 border-b flex items-center justify-between shadow-sm z-10 flex-shrink-0">
+            <header class="bg-white px-3 py-2 md:px-4 border-b flex items-center justify-between shadow-sm z-10 flex-shrink-0 relative">
                 <div class="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
                     <button onclick="goBack()" class="md:hidden p-2 text-gray-500 btn-animate rounded-full">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-width="2.5"></path></svg>
@@ -192,6 +196,22 @@
                         <div class="min-w-0">
                             <h3 id="headerTitle" class="font-bold text-gray-800 leading-tight truncate text-sm md:text-base flex items-center">Имя</h3>
                             <p id="headerMeta" class="text-[10px] md:text-xs text-blue-500 truncate">инфо</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="relative">
+                    <button id="headerMoreBtn" class="p-2 text-gray-400 hover:text-blue-600 rounded-full transition-colors">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2 s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2 s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                    </button>
+                    <div id="headerDropdown" class="dropdown-menu">
+                        <div class="dropdown-item" onclick="reportChannel()">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2"/></svg>
+                            Пожаловаться
+                        </div>
+                        <div id="leaveChannelBtn" class="dropdown-item danger" onclick="leaveCurrentChannel()">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke-width="2"/></svg>
+                            Покинуть канал
                         </div>
                     </div>
                 </div>
@@ -219,12 +239,15 @@
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     </button>
                 </div>
+
+                <div id="joinBar" class="p-3">
+                    <button onclick="toggleJoin()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold btn-animate shadow-md hover:bg-blue-700 transition-colors uppercase text-sm tracking-widest">Подписаться</button>
+                </div>
             </footer>
         </div>
     </main>
 
-    <div id="msgContextMenu" class="context-menu">
-        </div>
+    <div id="msgContextMenu" class="context-menu"></div>
 
     <div id="mediaViewer">
         <div class="media-actions">
@@ -360,7 +383,7 @@
         let newAvatarBase64 = null;
         let replyTo = null;
         let editingMsgId = null;
-        let currentMessagesCount = 0; // Для отслеживания изменений в списке сообщений
+        let currentMessagesCount = 0;
 
         const initAuth = async () => {
           const currentVersion = localStorage.getItem('pnavkv2_app_version');
@@ -559,17 +582,27 @@
         };
 
         window.toggleJoin = async () => {
+            if(!activeChat || activeChat.type !== 'channel') return;
             await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayUnion(activeChat.id) });
             await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayUnion(user) });
             showToast("Вы подписались!");
+            updateUI();
         };
 
         window.leaveCurrentChannel = async () => {
+            if(!activeChat || activeChat.type !== 'channel') return;
             await updateDoc(doc(db, ROOT, "users", "list", user), { subs: arrayRemove(activeChat.id) });
             await updateDoc(doc(db, ROOT, "channels", "list", activeChat.id), { subscribers: arrayRemove(user) });
+            showToast("Вы вышли из канала");
+            document.getElementById('headerDropdown').style.display = 'none';
             document.getElementById('noChannelView').classList.remove('hidden');
             document.getElementById('activeChannelContent').classList.add('hidden');
             activeChat = null;
+        };
+
+        window.reportChannel = () => {
+            showToast("Жалоба отправлена модераторам");
+            document.getElementById('headerDropdown').style.display = 'none';
         };
 
         window.selectChannel = (id) => {
@@ -577,7 +610,7 @@
             const c = channels.find(x => x.id === id);
             activeChat = { id, type: 'channel', data: c };
             lastMessagesData = []; 
-            currentMessagesCount = 0; // Сброс счетчика при смене чата
+            currentMessagesCount = 0;
             document.getElementById('messagesArea').innerHTML = '';
             updateUI();
             updateDoc(doc(db, ROOT, "channels", "list", id), { viewedBy: arrayUnion(user) });
@@ -589,7 +622,7 @@
             if(activeChat?.id === chatId) return;
             activeChat = { id: chatId, type: 'direct', targetUser };
             lastMessagesData = [];
-            currentMessagesCount = 0; // Сброс счетчика при смене чата
+            currentMessagesCount = 0;
             document.getElementById('messagesArea').innerHTML = '';
             updateUI();
             const chatRef = doc(db, ROOT, "direct_chats", "list", chatId);
@@ -614,7 +647,6 @@
             const area = document.getElementById('messagesArea');
             const sortedMsgs = [...msgs].sort((a, b) => (a.time?.toMillis() || Date.now() + 10000) - (b.time?.toMillis() || Date.now() + 10000));
             
-            // Проверяем, добавились ли новые сообщения или это просто обновление существующих
             const isNewMessageAdded = sortedMsgs.length > currentMessagesCount;
             currentMessagesCount = sortedMsgs.length;
 
@@ -651,7 +683,6 @@
                         <span class="text-[9px] font-bold">${m.viewCount || 0}</span>
                     </div>` : '';
 
-                // Отрисовка группированных реакций
                 let reactionsHTML = '';
                 if (m.reactions) {
                     const counts = {};
@@ -681,13 +712,11 @@
                 </div>`;
             }).join('');
             
-            // Листаем вниз только если добавлено новое сообщение
             if (isNewMessageAdded) {
                 area.scrollTop = area.scrollHeight;
             }
         }
 
-        // --- Обработка Long Press ---
         let touchTimer;
         window.startTouch = (e, id, sender, text, hasImg, isMine) => {
             touchTimer = setTimeout(() => {
@@ -700,7 +729,6 @@
             showMsgMenu(e.clientX, e.clientY, id, sender, text, hasImg, isMine);
         };
 
-        // --- Обновленное Контекстное Меню ---
         window.showMsgMenu = (x, y, id, sender, text, hasImg, isMine) => {
             const menu = document.getElementById('msgContextMenu');
             const menuW = 220;
@@ -710,7 +738,6 @@
             if (x + menuW > window.innerWidth) left = x - menuW + 20;
             if (y + menuH > window.innerHeight) top = y - menuH;
             
-            // Динамически создаем содержимое меню (реакции + кнопки)
             let reactionsHTML = `<div class="reactions-row">`;
             EMOJI_LIST.forEach(emo => {
                 reactionsHTML += `<span class="emoji-item" onclick="setReaction('${id}', '${emo}')">${emo}</span>`;
@@ -743,7 +770,6 @@
             menu.style.left = `${left}px`;
             menu.classList.add('active');
 
-            // Привязываем обработчики
             document.getElementById('ctxReply').onclick = () => { initReply(id, sender, text, hasImg); menu.classList.remove('active'); };
             document.getElementById('ctxCopy').onclick = () => { 
                 if(!text && hasImg) { showToast("Это фото без текста"); }
@@ -757,29 +783,20 @@
             setTimeout(() => document.addEventListener('click', close), 10);
         };
 
-        // --- Установка Реакции ---
         window.setReaction = async (msgId, emoji) => {
             if (!activeChat) return;
             const isChan = activeChat.type === 'channel';
             const colPath = isChan ? "channels" : "direct_chats";
             const msgRef = doc(db, ROOT, colPath, "list", activeChat.id, "messages", msgId);
-            
             const snap = await getDoc(msgRef);
             if (!snap.exists()) return;
-            
             const currentReactions = snap.data().reactions || {};
-            // Если такая же реакция уже стоит от этого юзера - убираем её
-            if (currentReactions[user] === emoji) {
-                delete currentReactions[user];
-            } else {
-                currentReactions[user] = emoji;
-            }
-
+            if (currentReactions[user] === emoji) delete currentReactions[user];
+            else currentReactions[user] = emoji;
             await updateDoc(msgRef, { reactions: currentReactions });
             document.getElementById('msgContextMenu').classList.remove('active');
         };
 
-        // --- Остальные функции (Pinch to Zoom, Pan, etc) ---
         let scale = 1, lastScale = 1;
         let startDist = 0;
         let isDragging = false;
@@ -962,6 +979,10 @@
             const isChan = currentChat.type === 'channel';
             const colPath = isChan ? "channels" : "direct_chats";
 
+            if (isChan && currentChat.data.owner !== user) {
+                return showToast("Писать в канал может только владелец");
+            }
+
             if (editingMsgId) {
                 try {
                     await updateDoc(doc(db, ROOT, colPath, "list", currentChat.id, "messages", editingMsgId), {
@@ -1003,13 +1024,28 @@
             const avatarImg = c ? '' : (userData?.avatar || '');
             if(avatarImg) { headerAvatar.style.backgroundImage = `url(${avatarImg})`; headerAvatar.textContent = ''; }
             else { headerAvatar.style.backgroundImage = ''; headerAvatar.textContent = (c ? c.name : activeChat.targetUser)[0].toUpperCase(); headerAvatar.style.backgroundColor = getHashColor(c ? c.name : activeChat.targetUser); }
+            
             if (c) {
                 const isOwner = c.owner === user;
-                document.getElementById('messageControls').classList.toggle('hidden', !isOwner && !mySubs.includes(activeChat.id));
+                const isSubscribed = mySubs.includes(activeChat.id);
+                document.getElementById('messageControls').classList.toggle('hidden', !isOwner);
+                document.getElementById('joinBar').style.display = (isOwner || isSubscribed) ? 'none' : 'block';
+                document.getElementById('headerMoreBtn').classList.remove('hidden');
+                document.getElementById('leaveChannelBtn').classList.toggle('hidden', isOwner);
             } else {
                 document.getElementById('messageControls').classList.remove('hidden');
+                document.getElementById('joinBar').style.display = 'none';
+                document.getElementById('headerMoreBtn').classList.add('hidden');
             }
         }
+
+        const headerMoreBtn = document.getElementById('headerMoreBtn');
+        const headerDropdown = document.getElementById('headerDropdown');
+        headerMoreBtn.onclick = (e) => {
+            e.stopPropagation();
+            headerDropdown.style.display = headerDropdown.style.display === 'flex' ? 'none' : 'flex';
+        };
+        document.addEventListener('click', () => { headerDropdown.style.display = 'none'; });
 
         window.openProfile = () => { renderProfileContent(); document.getElementById('profileModal').style.display = 'flex'; };
 
