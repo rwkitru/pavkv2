@@ -3,457 +3,320 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MMessage - Windows 8 Edition</title>
+    <title>MMessage</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.cdnfonts.com/css/segoe-ui-4" rel="stylesheet">
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyA6Hvab6lzHHsAdbBa3HQW-hIOtLSkjiWM",
-            authDomain: "mmetroui.firebaseapp.com",
-            projectId: "mmetroui",
-            storageBucket: "mmetroui.firebasestorage.app",
-            messagingSenderId: "587581879577",
-            appId: "1:587581879577:web:547926c31ad6c7e0758188"
-        };
-
+        const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         let currentUser = null;
         let selectedContactId = null;
-        let contacts = [];
+        let animationsEnabled = true;
         let unsubMessages = null;
 
-        const init = async () => {
-            try {
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
                 await signInAnonymously(auth);
-            } catch (err) {
-                console.error("Auth error", err);
             }
         };
+
+        initAuth();
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('settings-id-display').innerText = user.uid;
-                
-                try {
-                    await setDoc(doc(db, 'users', user.uid), {
-                        uid: user.uid,
-                        lastSeen: serverTimestamp(),
-                        name: `User_${user.uid.substring(0, 4)}`
-                    }, { merge: true });
-                    listenToContacts();
-                } catch (e) {
-                    console.error(e);
-                }
+                document.getElementById('my-id').innerText = user.uid;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid), {
+                    uid: user.uid,
+                    name: `User ${user.uid.substring(0, 4)}`,
+                    status: 'online',
+                    lastSeen: serverTimestamp()
+                }, { merge: true });
+                listenToContacts();
             }
         });
 
         function listenToContacts() {
-            onSnapshot(collection(db, 'users'), (snapshot) => {
-                contacts = snapshot.docs
+            if (!currentUser) return;
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'users'), (snap) => {
+                const list = document.getElementById('contact-list');
+                list.innerHTML = snap.docs
                     .map(doc => doc.data())
-                    .filter(u => u.uid !== currentUser?.uid);
-                renderContacts();
+                    .filter(u => u.uid !== currentUser?.uid)
+                    .map(u => `
+                        <div class="contact-item" onclick="selectContact('${u.uid}', '${u.name}')">
+                            <div class="w-12 h-12 bg-[#008a00] flex-shrink-0"></div>
+                            <div class="flex flex-col">
+                                <span class="text-xl font-light">${u.name}</span>
+                                <span class="text-xs opacity-50 uppercase">Online</span>
+                            </div>
+                        </div>
+                    `).join('');
             });
         }
 
-        function listenToMessages(otherId) {
-            if (unsubMessages) unsubMessages();
-            const chatId = [currentUser.uid, otherId].sort().join('_');
-            const q = collection(db, 'chats', chatId, 'messages');
+        window.copyId = () => {
+            const idText = document.getElementById('my-id').innerText;
+            const tempInput = document.createElement("input");
+            tempInput.value = idText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
             
-            unsubMessages = onSnapshot(q, (snapshot) => {
-                const msgs = snapshot.docs
-                    .map(doc => doc.data())
-                    .sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
-                renderMessages(msgs);
-            });
-        }
+            const btn = document.getElementById('copy-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "ГОТОВО";
+            btn.style.color = "#00aba9";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.color = "white";
+            }, 2000);
+        };
 
-        window.navigateTo = (view, contactId = null) => {
-            const startPage = document.getElementById('start-page');
-            const messengerPage = document.getElementById('messenger-page');
-            
-            if (view === 'start') {
-                messengerPage.classList.add('page-exit');
-                setTimeout(() => {
-                    messengerPage.classList.add('hidden');
-                    messengerPage.classList.remove('page-exit');
-                    startPage.classList.remove('hidden');
-                    startPage.classList.add('page-enter');
-                }, 300);
+        window.searchUser = async () => {
+            const searchId = document.getElementById('search-input').value.trim();
+            if (!searchId) return;
+
+            const userDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', searchId));
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                toggleSidebar('side-search', false);
+                navigate('msg');
+                selectContact(userData.uid, userData.name);
             } else {
-                startPage.classList.add('page-exit');
-                setTimeout(() => {
-                    startPage.classList.add('hidden');
-                    startPage.classList.remove('page-exit');
-                    messengerPage.classList.remove('hidden');
-                    messengerPage.classList.add('page-enter');
-                }, 300);
+                const errorBox = document.getElementById('search-error');
+                errorBox.innerText = "Пользователь не найден";
+                errorBox.classList.remove('hidden');
+                setTimeout(() => errorBox.classList.add('hidden'), 3000);
             }
-
-            if (contactId) selectContact(contactId);
-            toggleCharms(false);
-            toggleSearch(false);
-            toggleSettings(false);
         };
 
-        function renderContacts() {
-            const list = document.getElementById('contact-list');
-            list.innerHTML = contacts.map((c, index) => `
-                <div class="contact-item fade-in-up" style="animation-delay: ${index * 0.05}s" onclick="window.selectContact('${c.uid}')">
-                    <div class="avatar" style="background-color: #00aba9"></div>
-                    <div class="overflow-hidden">
-                        <div class="font-light text-xl truncate">${c.name}</div>
-                        <div class="text-xs opacity-40 font-mono truncate">${c.uid}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        window.selectContact = (uid) => {
+        window.selectContact = (uid, name) => {
+            if (!currentUser) return;
             selectedContactId = uid;
-            const contact = contacts.find(c => c.uid === uid) || { name: `User ...${uid.slice(-4)}` };
-            document.getElementById('current-chat-name').innerText = contact.name;
-            renderContacts();
-            listenToMessages(uid);
+            document.getElementById('chat-title').innerText = name;
+            const chatId = [currentUser.uid, uid].sort().join('_');
+            
+            if (unsubMessages) unsubMessages();
+            
+            unsubMessages = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'chats', chatId, 'messages'), (snap) => {
+                const area = document.getElementById('msg-area');
+                area.innerHTML = snap.docs
+                    .map(d => d.data())
+                    .sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0))
+                    .map(m => `
+                        <div class="msg ${m.senderId === currentUser.uid ? 'sent' : 'received'}">
+                            ${m.text}
+                        </div>
+                    `).join('');
+                area.scrollTop = area.scrollHeight;
+            });
         };
 
-        function renderMessages(msgs) {
-            const area = document.getElementById('messages-area');
-            area.innerHTML = msgs.map(m => `
-                <div class="message ${m.senderId === currentUser.uid ? 'sent' : 'received'}">
-                    ${m.text}
-                </div>
-            `).join('');
-            area.scrollTop = area.scrollHeight;
-        }
-
-        window.sendMessage = async () => {
-            const input = document.getElementById('message-input');
-            const text = input.value.trim();
-            if (!text || !selectedContactId) return;
-
+        window.sendMsg = async () => {
+            const input = document.getElementById('msg-input');
+            if (!input.value.trim() || !selectedContactId || !currentUser) return;
             const chatId = [currentUser.uid, selectedContactId].sort().join('_');
+            
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chats', chatId, 'messages'), {
+                text: input.value,
+                senderId: currentUser.uid,
+                timestamp: serverTimestamp()
+            });
             input.value = '';
-            try {
-                await addDoc(collection(db, 'chats', chatId, 'messages'), {
-                    text, senderId: currentUser.uid, timestamp: serverTimestamp()
+        };
+
+        window.navigate = (page) => {
+            const current = document.querySelector('.page:not(.hidden)');
+            const target = document.getElementById(page + '-page');
+            if (current === target) return;
+
+            current.style.animation = 'winExit 0.3s forwards';
+            setTimeout(() => {
+                current.classList.add('hidden');
+                target.classList.remove('hidden');
+                target.style.animation = 'winEnter 0.4s forwards';
+            }, 300);
+        };
+
+        window.toggleAnim = () => {
+            animationsEnabled = !animationsEnabled;
+            const track = document.querySelector('#anim-toggle .sw-track');
+            if(animationsEnabled) track.classList.add('active');
+            else track.classList.remove('active');
+        };
+
+        window.toggleSidebar = (id, state) => {
+            const sidebar = document.getElementById(id);
+            if (state) sidebar.classList.add('active');
+            else sidebar.classList.remove('active');
+        };
+
+        window.onload = () => {
+            document.addEventListener('mousedown', (e) => {
+                if (!animationsEnabled) return;
+                const el = e.target.closest('.tile, .win-btn, .contact-item, .charm, .back-btn');
+                if (!el) return;
+                const r = el.getBoundingClientRect();
+                const x = e.clientX - r.left, y = e.clientY - r.top;
+                const tx = (y - r.height/2) / (r.height/2) * -15;
+                const ty = (x - r.width/2) / (r.width/2) * 15;
+                el.style.transform = `perspective(1000px) rotateX(${tx}deg) rotateY(${ty}deg) scale(0.95)`;
+                el.style.transition = 'transform 0.05s';
+            });
+            document.addEventListener('mouseup', () => {
+                document.querySelectorAll('.tile, .win-btn, .contact-item, .charm, .back-btn').forEach(el => {
+                    el.style.transform = '';
+                    el.style.transition = 'transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1)';
                 });
-            } catch (e) { console.error(e); }
+            });
+            const charms = document.getElementById('charms');
+            document.addEventListener('mousemove', (e) => {
+                if(e.clientX > window.innerWidth - 15) charms.classList.add('active');
+                if(e.clientX < window.innerWidth - 160) charms.classList.remove('active');
+            });
         };
-
-        window.performSearch = async () => {
-            const id = document.getElementById('search-input').value.trim();
-            if (!id) return;
-            try {
-                const userDoc = await getDoc(doc(db, 'users', id));
-                if (userDoc.exists()) navigateTo('messenger', id);
-                else alert("Пользователь не найден");
-            } catch (e) { alert("Ошибка поиска"); }
-        };
-
-        window.toggleCharms = (s) => document.getElementById('charms-bar').classList.toggle('active', s);
-        window.toggleSearch = (s) => document.getElementById('search-overlay').classList.toggle('active', s);
-        window.toggleSettings = (s) => document.getElementById('settings-overlay').classList.toggle('active', s);
-
-        // Tilt effect for tiles
-        document.addEventListener('mousedown', (e) => {
-            const tile = e.target.closest('.tile');
-            if (tile) {
-                const rect = tile.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-
-                const rotateX = (y - centerY) / 10;
-                const rotateY = (centerX - x) / 10;
-
-                tile.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(0.98)`;
-            }
-        });
-
-        document.addEventListener('mouseup', () => {
-            document.querySelectorAll('.tile').forEach(t => t.style.transform = '');
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (e.clientX > window.innerWidth - 10) toggleCharms(true);
-            if (e.clientX < window.innerWidth - 150) {
-                if (!document.getElementById('search-overlay').classList.contains('active') &&
-                    !document.getElementById('settings-overlay').classList.contains('active')) {
-                    toggleCharms(false);
-                }
-            }
-        });
-
-        init();
     </script>
     <style>
-        :root { 
-            --win-blue: #004687; 
-            --win-teal: #00aba9;
-            --win-purple: #7e3878;
-            --win-dark: #1d1d1d;
-            --win-orange: #d24726;
-        }
-        
-        body { 
-            font-family: 'Segoe UI', 'Segoe UI Light', 'Helvetica Neue', sans-serif;
-            background-color: var(--win-blue);
-            color: white;
-            overflow: hidden;
-            margin: 0;
-            height: 100vh;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        .metro-bg {
-            position: fixed;
-            inset: 0;
-            background: linear-gradient(135deg, #004687 0%, #002d54 100%);
-            z-index: -1;
-        }
-
-        /* Animations */
-        @keyframes pageEnter {
-            from { opacity: 0; transform: scale(1.05) translateZ(0); }
-            to { opacity: 1; transform: scale(1) translateZ(0); }
-        }
-        @keyframes pageExit {
-            from { opacity: 1; transform: scale(1) translateZ(0); }
-            to { opacity: 0; transform: scale(0.95) translateZ(0); }
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .page-enter { animation: pageEnter 0.5s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
-        .page-exit { animation: pageExit 0.3s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
-        .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; opacity: 0; }
-
-        .page { width: 100vw; height: 100vh; padding: 80px 120px; box-sizing: border-box; position: absolute; top: 0; left: 0; }
-        
-        h1 { font-weight: 100; font-size: 72px; margin-bottom: 60px; letter-spacing: -1.5px; }
-
-        /* Tiles with Tilt Effect */
-        .tiles-grid { display: grid; grid-template-columns: repeat(auto-fill, 180px); grid-auto-rows: 180px; gap: 10px; }
-        .tile { 
-            background: var(--win-teal); 
-            padding: 22px; 
-            cursor: pointer; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: flex-end;
-            transition: transform 0.15s ease-out, outline 0.1s;
-            position: relative;
-            transform-style: preserve-3d;
-            backface-visibility: hidden;
-            user-select: none;
-        }
-        .tile:hover { outline: 3px solid rgba(255,255,255,0.3); }
+        body { background: #004687; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; height: 100vh; overflow: hidden; user-select: none; }
+        @keyframes winEnter { from { opacity: 0; transform: perspective(1000px) rotateY(10deg) scale(1.1); } to { opacity: 1; transform: perspective(1000px) rotateY(0) scale(1); } }
+        @keyframes winExit { to { opacity: 0; transform: perspective(1000px) rotateY(-10deg) scale(0.9); } }
+        .page { position: absolute; inset: 0; padding: 80px 10%; box-sizing: border-box; }
+        h1 { font-size: 80px; font-weight: 100; margin-bottom: 40px; }
+        .tiles { display: grid; grid-template-columns: repeat(auto-fill, 160px); grid-auto-rows: 160px; gap: 10px; }
+        .tile { background: #00aba9; padding: 15px; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; }
+        .tile:hover { outline: 3px solid rgba(255,255,255,0.4); }
         .tile.wide { grid-column: span 2; }
-        .tile-icon { width: 54px; height: 54px; margin-bottom: auto; }
-
-        /* Messenger Layout */
-        .chat-layout { display: flex; height: calc(100vh - 300px); }
-        .contact-list { width: 400px; overflow-y: auto; padding-right: 20px; }
-        .contact-item { 
-            padding: 14px; 
-            display: flex; 
-            align-items: center; 
-            gap: 18px; 
-            cursor: pointer; 
-            margin-bottom: 6px;
-            transition: background 0.15s;
-        }
+        .tile svg { width: 50px; height: 50px; margin-bottom: auto; }
+        .chat-layout { display: flex; height: calc(100vh - 300px); gap: 50px; }
+        .contact-list { width: 350px; overflow-y: auto; }
+        .contact-item { display: flex; align-items: center; gap: 15px; padding: 10px; cursor: pointer; margin-bottom: 5px; }
         .contact-item:hover { background: rgba(255,255,255,0.1); }
-        .contact-item.active { background: var(--win-teal); }
-        .avatar { width: 50px; height: 50px; flex-shrink: 0; }
-
-        .chat-main { flex: 1; display: flex; flex-direction: column; padding-left: 60px; }
-        .messages-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 30px; }
-        .message { 
-            max-width: 70%; 
-            padding: 14px 20px; 
-            font-size: 20px; 
-            font-weight: 300;
-        }
-        .message.received { align-self: flex-start; background: rgba(255,255,255,0.12); }
-        .message.sent { align-self: flex-end; background: var(--win-purple); }
-
-        /* Form Elements */
-        input[type="text"] { 
-            background: white; 
-            border: 3px solid transparent; 
-            padding: 12px 18px; 
-            color: black; 
-            font-size: 20px; 
-            width: 100%; 
-            outline: none;
-        }
-        input[type="text"]:focus { border-color: var(--win-teal); }
-        .win-btn { 
-            background: #222; 
-            color: white; 
-            border: 2px solid white; 
-            padding: 10px 45px; 
-            cursor: pointer;
-            font-size: 16px;
-            text-transform: lowercase;
-        }
-        .win-btn:hover { background: #444; }
-
-        /* Overlays */
-        #search-overlay, #settings-overlay { 
-            position: fixed; top: 0; right: -420px; width: 400px; height: 100vh; 
-            background: var(--win-dark); z-index: 1001; padding: 80px 40px; 
-            transition: right 0.35s cubic-bezier(0.1, 0.7, 0.1, 1);
-            box-shadow: -15px 0 40px rgba(0,0,0,0.6);
-        }
-        #search-overlay.active, #settings-overlay.active { right: 0; }
-
-        .back-btn { 
-            width: 44px; height: 44px; border: 2.5px solid white; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-        }
-
-        /* Win 8 Toggle */
-        .win8-switch { display: block; margin-bottom: 35px; }
-        .switch-title { font-size: 16px; font-weight: 600; color: #999; margin-bottom: 10px; display: block; }
-        .switch-container { display: flex; align-items: center; gap: 18px; }
-        .switch-track { width: 64px; height: 28px; background: #333; border: 2.5px solid #666; position: relative; transition: 0.2s; cursor: pointer; }
-        .switch-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: white; transition: 0.2s; }
-        input:checked + .switch-track { background: var(--win-teal); border-color: var(--win-teal); }
-        input:checked + .switch-track .switch-thumb { left: 39px; }
-        .disabled .switch-track { opacity: 0.5; cursor: not-allowed; }
-
-        /* Charms Bar */
-        .charms-bar { 
-            position: fixed; right: -120px; top: 0; height: 100vh; width: 100px; 
-            background: rgba(0,0,0,0.95); display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; gap: 50px; z-index: 1000; 
-            transition: right 0.25s cubic-bezier(0.1, 0.7, 0.1, 1); 
-        }
-        .charms-bar.active { right: 0; }
-        .charm-icon { color: #666; cursor: pointer; text-align: center; }
-        .charm-icon:hover { color: white; }
-        .charm-icon svg { width: 38px; height: 38px; margin: 0 auto 10px; }
-        .charm-icon span { font-size: 13px; }
+        .msg-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+        .msg { padding: 10px 20px; font-size: 20px; max-width: 70%; }
+        .msg.received { background: rgba(255,255,255,0.1); align-self: flex-start; }
+        .msg.sent { background: #7e3878; align-self: flex-end; }
+        .win-input { background: white; color: black; padding: 12px; border: none; width: 100%; outline: none; font-size: 18px; }
+        .win-btn { background: #222; border: 2px solid white; color: white; padding: 8px 30px; cursor: pointer; text-transform: lowercase; }
+        .charms { position: fixed; right: -100px; top: 0; height: 100vh; width: 90px; background: rgba(0,0,0,0.9); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 40px; transition: 0.2s; }
+        .charms.active { right: 0; }
+        .charm { text-align: center; color: #555; cursor: pointer; transition: 0.2s; }
+        .charm:hover { color: white; }
+        .overlay { position: fixed; right: -400px; top: 0; height: 100vh; width: 380px; background: #1f1f1f; z-index: 110; padding: 60px 30px; transition: 0.3s cubic-bezier(0.1, 0.7, 0.1, 1); box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
+        .overlay.active { right: 0; }
+        .back-btn { width: 40px; height: 40px; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 30px; }
+        .sw-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
+        .sw-label { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #aaa; }
+        .sw-track { width: 55px; height: 25px; border: 2px solid #666; position: relative; cursor: pointer; }
+        .sw-track.active { background: #00aba9; border-color: #00aba9; }
+        .sw-thumb { width: 12px; height: 12px; background: white; position: absolute; top: 5px; left: 5px; transition: 0.2s; }
+        .sw-track.active .sw-thumb { left: 34px; }
+        .disabled { opacity: 0.4; cursor: not-allowed; }
     </style>
 </head>
 <body>
-    <div class="metro-bg"></div>
 
-    <!-- Start Page -->
-    <div class="page page-enter" id="start-page">
-        <h1>Пуск</h1>
-        <div class="tiles-grid">
-            <div class="tile wide fade-in-up" style="background: var(--win-purple); animation-delay: 0.1s" onclick="navigateTo('messenger')">
-                <svg class="tile-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M20,2H4C2.9,2,2,2.9,2,4v18l4-4h14c1.1,0,2-0.9,2-2V4C22,2.9,21.1,2,20,2z"/></svg>
-                <div class="text-2xl font-light">Сообщения</div>
+    <div class="page" id="start-page">
+        <h1>MMessage</h1>
+        <div class="tiles">
+            <div class="tile wide" style="background: #7e3878;" onclick="navigate('msg')">
+                <svg viewBox="0 0 24 24" fill="white"><path d="M20,2H4C2.9,2,2,2.9,2,4v18l4-4h14c1.1,0,2-0.9,2-2V4C22,2.9,21.1,2,20,2z"/></svg>
+                <span class="text-2xl font-light">Сообщения</span>
             </div>
-            <div class="tile fade-in-up" style="background: #008a00; animation-delay: 0.2s" onclick="toggleSearch(true)">
-                <svg class="tile-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/></svg>
-                <div class="text-2xl font-light">Поиск</div>
+            <div class="tile" style="background: #008a00;" onclick="toggleSidebar('side-search', true)">
+                <svg viewBox="0 0 24 24" fill="white"><path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/></svg>
+                <span class="text-2xl font-light">Поиск</span>
             </div>
-            <!-- Changed Friends to Settings as requested -->
-            <div class="tile fade-in-up" style="background: var(--win-orange); animation-delay: 0.3s" onclick="toggleSettings(true)">
-                <svg class="tile-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg>
-                <div class="text-2xl font-light">Настройки</div>
+            <div class="tile" style="background: #d24726;" onclick="toggleSidebar('side-settings', true)">
+                <svg viewBox="0 0 24 24" fill="white"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg>
+                <span class="text-2xl font-light">Настройки</span>
             </div>
         </div>
     </div>
 
-    <!-- Messenger Page -->
-    <div class="page hidden" id="messenger-page">
-        <div class="flex items-center mb-12">
-            <div class="back-btn mr-10" onclick="navigateTo('start')">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+    <div class="page hidden" id="msg-page">
+        <div class="flex items-center mb-10">
+            <div class="back-btn mr-10" onclick="navigate('start')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M15 19l-7-7 7-7"/></svg>
             </div>
             <h1>Сообщения</h1>
         </div>
         <div class="chat-layout">
             <div class="contact-list" id="contact-list"></div>
-            <div class="chat-main">
-                <h2 id="current-chat-name" class="text-5xl font-extralight mb-12 opacity-80">выберите чат</h2>
-                <div class="messages-area" id="messages-area"></div>
-                <div class="flex gap-4">
-                    <input type="text" id="message-input" placeholder="Напишите сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
-                    <button class="win-btn" onclick="sendMessage()">отправить</button>
+            <div class="flex-1 flex flex-col">
+                <h2 id="chat-title" class="text-5xl font-light mb-10 opacity-40">Выберите контакт</h2>
+                <div class="msg-area" id="msg-area"></div>
+                <div class="flex gap-4 mt-8">
+                    <input type="text" id="msg-input" class="win-input" placeholder="Напишите сообщение..." onkeypress="if(event.key==='Enter') sendMsg()">
+                    <button class="win-btn" onclick="sendMsg()">отправить</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Charms Bar -->
-    <div class="charms-bar" id="charms-bar">
-        <div class="charm-icon" onclick="toggleSearch(true)">
-            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/></svg>
-            <span>Поиск</span>
+    <div class="charms" id="charms">
+        <div class="charm" onclick="navigate('start')">
+            <svg width="40" height="40" fill="currentColor" viewBox="0 0 24 24"><path d="M2,12L12,2L22,12H18V22H12V18H10V22H6V12H2Z"/></svg>
+            <p class="text-[10px] mt-1 font-bold uppercase">MMessage</p>
         </div>
-        <div class="charm-icon" onclick="navigateTo('start')">
-            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M2,12L12,2L22,12H18V22H12V18H10V22H6V12H2Z"/></svg>
-            <span>MMessage</span>
+        <div class="charm" onclick="toggleSidebar('side-search', true)">
+            <svg width="40" height="40" fill="currentColor" viewBox="0 0 24 24"><path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/></svg>
+            <p class="text-[10px] mt-1 font-bold uppercase">Поиск</p>
         </div>
-        <div class="charm-icon" onclick="toggleSettings(true)">
-            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg>
-            <span>Параметры</span>
+        <div class="charm" onclick="toggleSidebar('side-settings', true)">
+            <svg width="40" height="40" fill="currentColor" viewBox="0 0 24 24"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg>
+            <p class="text-[10px] mt-1 font-bold uppercase">Параметры</p>
         </div>
     </div>
 
-    <!-- Search Overlay -->
-    <div id="search-overlay">
-        <div class="flex items-center mb-16">
-            <div class="back-btn mr-6" onclick="toggleSearch(false)">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M15 19l-7-7 7-7"/></svg>
-            </div>
-            <h2 class="text-4xl font-light uppercase tracking-wider">Поиск</h2>
+    <div class="overlay" id="side-search">
+        <div class="back-btn" onclick="toggleSidebar('side-search', false)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M15 19l-7-7 7-7"/></svg>
         </div>
-        <input type="text" id="search-input" placeholder="ID друга..." class="mb-8">
-        <button class="win-btn" onclick="performSearch()">найти пользователя</button>
+        <h2 class="text-4xl font-light mb-10 uppercase tracking-tighter">Поиск</h2>
+        <div class="sw-row">
+            <p class="sw-label">Введите ID пользователя</p>
+            <input type="text" id="search-input" class="win-input mb-4" placeholder="Напр. abc-123-def">
+            <button class="win-btn w-full" onclick="searchUser()">Найти и написать</button>
+            <p id="search-error" class="text-red-500 text-sm mt-2 hidden"></p>
+        </div>
     </div>
 
-    <!-- Settings Overlay -->
-    <div id="settings-overlay">
-        <div class="flex items-center mb-16">
-            <div class="back-btn mr-6" onclick="toggleSettings(false)">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M15 19l-7-7 7-7"/></svg>
+    <div class="overlay" id="side-settings">
+        <div class="back-btn" onclick="toggleSidebar('side-settings', false)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M15 19l-7-7 7-7"/></svg>
+        </div>
+        <h2 class="text-4xl font-light mb-10 uppercase tracking-tighter">Параметры</h2>
+        <div class="mb-10">
+            <p class="sw-label">Ваш идентификатор</p>
+            <div class="flex flex-col gap-2">
+                <p id="my-id" class="text-sm break-all opacity-80 text-teal-400 font-bold">...</p>
+                <p id="copy-btn" class="text-xs font-bold cursor-pointer hover:text-white transition-colors" onclick="copyId()">КОПИРОВАТЬ</p>
             </div>
-            <h2 class="text-4xl font-light uppercase tracking-wider">Параметры</h2>
         </div>
-
-        <div class="mb-14">
-            <span class="switch-title">Ваш уникальный ID</span>
-            <div id="settings-id-display" class="text-xl font-light break-all mb-3 text-teal-400">загрузка...</div>
-            <p class="text-sm opacity-50">передайте этот идентификатор собеседнику</p>
-        </div>
-
-        <div class="win8-switch disabled">
-            <span class="switch-title">Упрощенная версия</span>
-            <div class="switch-container">
-                <input type="checkbox" checked disabled class="hidden">
-                <div class="switch-track"><div class="switch-thumb"></div></div>
-                <span class="text-sm font-bold uppercase">вкл</span>
+        <div class="sw-row">
+            <p class="sw-label">Персонализация</p>
+            <div class="sw-control disabled">
+                <div class="sw-track active"><div class="sw-thumb"></div></div>
+                <span class="sw-label !text-white !opacity-100 mt-2">Упрощенная версия</span>
             </div>
-            <p class="text-xs text-gray-600 mt-2"></p>
         </div>
-
-        <div class="win8-switch">
-            <span class="switch-title">Живые плитки</span>
-            <div class="switch-container">
-                <input type="checkbox" class="hidden" id="live-tiles">
-                <div class="switch-track" onclick="this.previousElementSibling.click()"><div class="switch-thumb"></div></div>
-                <span class="text-sm font-bold uppercase">выкл</span>
+        <div class="sw-row">
+            <p class="sw-label">Интерфейс</p>
+            <div id="anim-toggle" onclick="toggleAnim()">
+                <div class="sw-track active"><div class="sw-thumb"></div></div>
+                <span class="sw-label !text-white !opacity-100 mt-2">Анимированные плитки</span>
             </div>
         </div>
     </div>
