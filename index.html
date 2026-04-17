@@ -62,7 +62,7 @@
                             </div>
                         </div>
                     `).join('');
-            });
+            }, (err) => console.error(err));
         }
 
         window.copyId = () => {
@@ -121,7 +121,7 @@
                         </div>
                     `).join('');
                 area.scrollTop = area.scrollHeight;
-            });
+            }, (err) => console.error(err));
         };
 
         window.sendMsg = async () => {
@@ -164,26 +164,31 @@
         };
 
         window.onload = () => {
+            // Исправленный обработчик нажатия (Tilt effect)
             document.addEventListener('mousedown', (e) => {
                 if (!animationsEnabled) return;
-                const el = e.target.closest('.tile, .win-btn, .contact-item, .charm, .back-btn');
+                const el = e.target.closest('.tile, .win-btn, .contact-item, .charm, .back-btn, .sw-track');
                 if (!el) return;
+                
                 const r = el.getBoundingClientRect();
                 const x = e.clientX - r.left, y = e.clientY - r.top;
-                const tx = (y - r.height/2) / (r.height/2) * -15;
-                const ty = (x - r.width/2) / (r.width/2) * 15;
-                el.style.transform = `perspective(1000px) rotateX(${tx}deg) rotateY(${ty}deg) scale(0.95)`;
-                el.style.transition = 'transform 0.05s';
+                const tx = (y - r.height/2) / (r.height/2) * -10;
+                const ty = (x - r.width/2) / (r.width/2) * 10;
+                
+                el.style.transition = 'transform 0.1s ease-out';
+                el.style.transform = `perspective(1000px) rotateX(${tx}deg) rotateY(${ty}deg) scale(0.97)`;
             });
+
             document.addEventListener('mouseup', () => {
-                document.querySelectorAll('.tile, .win-btn, .contact-item, .charm, .back-btn').forEach(el => {
-                    el.style.transform = '';
+                document.querySelectorAll('.tile, .win-btn, .contact-item, .charm, .back-btn, .sw-track').forEach(el => {
                     el.style.transition = 'transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1)';
+                    el.style.transform = '';
                 });
             });
+
             const charms = document.getElementById('charms');
             document.addEventListener('mousemove', (e) => {
-                if(e.clientX > window.innerWidth - 15) charms.classList.add('active');
+                if(e.clientX > window.innerWidth - 20) charms.classList.add('active');
                 if(e.clientX < window.innerWidth - 160) charms.classList.remove('active');
             });
         };
@@ -192,37 +197,47 @@
         body { background: #004687; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; height: 100vh; overflow: hidden; user-select: none; }
         @keyframes winEnter { from { opacity: 0; transform: perspective(1000px) rotateY(10deg) scale(1.1); } to { opacity: 1; transform: perspective(1000px) rotateY(0) scale(1); } }
         @keyframes winExit { to { opacity: 0; transform: perspective(1000px) rotateY(-10deg) scale(0.9); } }
-        .page { position: absolute; inset: 0; padding: 80px 10%; box-sizing: border-box; }
+        
+        .page { position: absolute; inset: 0; padding: 80px 10%; box-sizing: border-box; z-index: 10; }
         h1 { font-size: 80px; font-weight: 100; margin-bottom: 40px; }
+        
         .tiles { display: grid; grid-template-columns: repeat(auto-fill, 160px); grid-auto-rows: 160px; gap: 10px; }
-        .tile { background: #00aba9; padding: 15px; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; }
+        .tile { background: #00aba9; padding: 15px; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; position: relative; z-index: 20; }
         .tile:hover { outline: 3px solid rgba(255,255,255,0.4); }
         .tile.wide { grid-column: span 2; }
-        .tile svg { width: 50px; height: 50px; margin-bottom: auto; }
+        .tile svg { width: 50px; height: 50px; margin-bottom: auto; pointer-events: none; }
+        
         .chat-layout { display: flex; height: calc(100vh - 300px); gap: 50px; }
         .contact-list { width: 350px; overflow-y: auto; }
-        .contact-item { display: flex; align-items: center; gap: 15px; padding: 10px; cursor: pointer; margin-bottom: 5px; }
+        .contact-item { display: flex; align-items: center; gap: 15px; padding: 10px; cursor: pointer; margin-bottom: 5px; position: relative; z-index: 20; }
         .contact-item:hover { background: rgba(255,255,255,0.1); }
+        
         .msg-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
         .msg { padding: 10px 20px; font-size: 20px; max-width: 70%; }
         .msg.received { background: rgba(255,255,255,0.1); align-self: flex-start; }
         .msg.sent { background: #7e3878; align-self: flex-end; }
-        .win-input { background: white; color: black; padding: 12px; border: none; width: 100%; outline: none; font-size: 18px; }
-        .win-btn { background: #222; border: 2px solid white; color: white; padding: 8px 30px; cursor: pointer; text-transform: lowercase; }
-        .charms { position: fixed; right: -100px; top: 0; height: 100vh; width: 90px; background: rgba(0,0,0,0.9); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 40px; transition: 0.2s; }
+        
+        .win-input { background: white; color: black; padding: 12px; border: none; width: 100%; outline: none; font-size: 18px; user-select: text; }
+        .win-btn { background: #222; border: 2px solid white; color: white; padding: 8px 30px; cursor: pointer; text-transform: lowercase; position: relative; z-index: 20; }
+        
+        .charms { position: fixed; right: -100px; top: 0; height: 100vh; width: 90px; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 40px; transition: 0.2s; pointer-events: auto; }
         .charms.active { right: 0; }
-        .charm { text-align: center; color: #555; cursor: pointer; transition: 0.2s; }
+        .charm { text-align: center; color: #555; cursor: pointer; transition: 0.2s; pointer-events: auto; }
         .charm:hover { color: white; }
-        .overlay { position: fixed; right: -400px; top: 0; height: 100vh; width: 380px; background: #1f1f1f; z-index: 110; padding: 60px 30px; transition: 0.3s cubic-bezier(0.1, 0.7, 0.1, 1); box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
+        
+        .overlay { position: fixed; right: -400px; top: 0; height: 100vh; width: 380px; background: #1f1f1f; z-index: 2000; padding: 60px 30px; transition: 0.3s cubic-bezier(0.1, 0.7, 0.1, 1); box-shadow: -10px 0 30px rgba(0,0,0,0.5); pointer-events: auto; }
         .overlay.active { right: 0; }
-        .back-btn { width: 40px; height: 40px; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 30px; }
+        
+        .back-btn { width: 40px; height: 40px; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 30px; position: relative; z-index: 30; }
+        
         .sw-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
         .sw-label { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #aaa; }
-        .sw-track { width: 55px; height: 25px; border: 2px solid #666; position: relative; cursor: pointer; }
+        .sw-track { width: 55px; height: 25px; border: 2px solid #666; position: relative; cursor: pointer; pointer-events: auto; }
         .sw-track.active { background: #00aba9; border-color: #00aba9; }
-        .sw-thumb { width: 12px; height: 12px; background: white; position: absolute; top: 5px; left: 5px; transition: 0.2s; }
+        .sw-thumb { width: 12px; height: 12px; background: white; position: absolute; top: 5px; left: 5px; transition: 0.2s; pointer-events: none; }
         .sw-track.active .sw-thumb { left: 34px; }
-        .disabled { opacity: 0.4; cursor: not-allowed; }
+        
+        .disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
     </style>
 </head>
 <body>
